@@ -9,6 +9,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@apollo/client": "^4.1.6",
     "@fullcalendar/core": "^6.1.19",
     "@fullcalendar/daygrid": "^6.1.19",
     "@fullcalendar/interaction": "^6.1.19",
@@ -22,6 +23,7 @@
     "apexcharts": "^4.7.0",
     "autoprefixer": "^10.4.22",
     "flatpickr": "^4.6.13",
+    "graphql": "^16.13.0",
     "next": "16.0.10",
     "react": "^19.2.0",
     "react-apexcharts": "^1.8.0",

@@ -32,11 +32,40 @@ const navItems: NavItem[] = [
     name: "Dashboard",
     subItems: [{ name: "Ecommerce", path: "/", pro: false }],
   },
+  {
+  icon: <BoxCubeIcon />,
+  name: "Entrepots",
+  path: "/entrepots",
+},
+
+{
+  icon: <GridIcon />, // ou un autre icon (BoxIcon/DatabaseIcon)
+  name: "Stocks",
+  subItems: [
+    { name: "Gestion Stock", path: "/stocks", pro: false },
+  ],
+},
+
+
+{
+  icon: <GridIcon />, // ou un icon Stock/Mouvements si tu as
+  name: "Stocks",
+  subItems: [
+    { name: "Mouvements", path: "/mouvements", pro: false },
+  ],
+},
+
     {
     icon: <GridIcon />,
     name: "Packagings",
     subItems: [{ name: "Ecommerce", path: "/", pro: false }],
   },
+
+
+
+
+
+  
   {
     icon: <CalenderIcon />,
     name: "Calendar",
@@ -109,7 +138,7 @@ const AppSidebar: React.FC = () => {
   ) => (
     <ul className="flex flex-col gap-4">
       {navItems.map((nav, index) => (
-        <li key={nav.name}>
+        <li key={`${nav.name}-${index}`}>
           {nav.subItems ? (
             <button
               onClick={() => handleSubmenuToggle(index, menuType)}
