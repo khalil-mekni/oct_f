@@ -59,7 +59,23 @@ const navItems: NavItem[] = [
     { name: "Mouvements", path: "/mouvements", pro: false },
   ],
 },
-
+{
+  icon: <PageIcon />,
+  name: "Commandes",
+  subItems: [{ name: "Commandes", path: "/commandes", pro: false }],
+},
+{
+  icon: <PageIcon />,
+  name: "Bon Livraisons",
+  subItems: [
+    { name: "Bon Livraisons", path: "/bon-livraisons", pro: false },
+  ],
+},
+{
+  icon: <PageIcon />,
+  name: "Factures",
+  subItems: [{ name: "Factures", path: "/factures", pro: false }],
+},
 {
   icon: <PageIcon />,
   name: "Stock Inventaire",

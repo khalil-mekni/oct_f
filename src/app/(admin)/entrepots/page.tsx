@@ -15,6 +15,7 @@ export default function EntrepotsPage() {
 
   const [form, setForm] = useState({
     id: "",
+    nom: "",
     adresse: "",
     capacite_totale: "",
     capacite_disponible: "",
@@ -38,6 +39,7 @@ export default function EntrepotsPage() {
     e.preventDefault();
 
     const payload: any = {
+      nom: form.nom,
       adresse: form.adresse,
       statut: form.statut,
       capacite_totale: form.capacite_totale ? Number(form.capacite_totale) : undefined,
@@ -50,7 +52,7 @@ export default function EntrepotsPage() {
       await createEntrepot(payload);
     }
 
-    setForm({ id: "", adresse: "", capacite_totale: "", capacite_disponible: "", statut: "ACTIF" });
+    setForm({ id: "", nom: "",adresse: "", capacite_totale: "", capacite_disponible: "", statut: "ACTIF" });
     await load();
   }
 
@@ -63,6 +65,7 @@ export default function EntrepotsPage() {
   function onEdit(item: Entrepot) {
     setForm({
       id: item.id,
+      nom: item.nom,
       adresse: item.adresse,
       capacite_totale: item.capacite_totale?.toString() ?? "",
       capacite_disponible: item.capacite_disponible?.toString() ?? "",
@@ -91,6 +94,13 @@ return (
 
       <form onSubmit={onSubmit} className="space-y-4">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+          <input
+            className="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none dark:border-gray-800 dark:bg-gray-950 dark:text-white dark:placeholder:text-gray-500"
+            placeholder="Nom"
+            value={form.nom}
+            onChange={(e) => setForm((s) => ({ ...s, nom: e.target.value }))}
+            required
+          />
           <input
             className="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none dark:border-gray-800 dark:bg-gray-950 dark:text-white dark:placeholder:text-gray-500"
             placeholder="Adresse"
@@ -142,6 +152,7 @@ return (
               onClick={() =>
                 setForm({
                   id: "",
+                  nom: "",
                   adresse: "",
                   capacite_totale: "",
                   capacite_disponible: "",
