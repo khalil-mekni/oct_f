@@ -12,8 +12,13 @@ import Checkbox from "@/components/form/input/Checkbox";
 import { register } from "@/lib/auth.api";
 
 export default function SignUpForm() {
+  const router = useRouter();
+
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [birthDate, setBirthDate] = useState("");
+  const [address, setAddress] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -21,8 +26,6 @@ export default function SignUpForm() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
-  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,6 +35,8 @@ export default function SignUpForm() {
     const cleanFirstName = firstName.trim();
     const cleanLastName = lastName.trim();
     const cleanEmail = email.trim().toLowerCase();
+    const cleanPhone = phone.trim();
+    const cleanAddress = address.trim();
 
     if (!cleanFirstName || !cleanLastName) {
       setError("Veuillez saisir votre prénom et votre nom.");
@@ -56,15 +61,17 @@ export default function SignUpForm() {
     setLoading(true);
 
     try {
-      const fullName = `${cleanFirstName} ${cleanLastName}`;
       await register({
-        name: fullName,
+        first_name: cleanFirstName,
+        last_name: cleanLastName,
         email: cleanEmail,
         password,
+        phone: cleanPhone || undefined,
+        birth_date: birthDate || undefined,
+        address: cleanAddress || undefined,
       });
 
       setSuccess("Compte créé avec succès. Vérifiez votre email pour activer votre compte.");
-
       router.push(`/verify-email?email=${encodeURIComponent(cleanEmail)}`);
     } catch (err: any) {
       setError(err?.message || "Erreur lors de l'inscription.");
@@ -74,7 +81,8 @@ export default function SignUpForm() {
   };
 
   return (
-    <div className="flex min-h-screen w-full bg-white flex-col-reverse lg:flex-row">
+    <div className="flex h-screen w-full bg-white flex-col-reverse lg:flex-row overflow-hidden">
+      {/* LEFT SIDE */}
       <div className="flex flex-col justify-center flex-1 px-10 sm:px-16 lg:px-28 bg-white overflow-y-auto py-12">
         <div className="w-full max-w-md mx-auto">
           <Link
@@ -93,68 +101,123 @@ export default function SignUpForm() {
             </h1>
             <div className="h-1.5 w-12 bg-[#00A09D] rounded-full mb-4"></div>
             <p className="text-gray-400 font-medium">
-              Remplissez les informations pour accéder au système.
+              Accédez à votre espace sécurisé de gestion.
             </p>
           </div>
 
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
+          <form className="space-y-7 pb-10" onSubmit={handleSubmit}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div className="space-y-3">
                 <Label className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">
                   Prénom
                 </Label>
                 <Input
                   defaultValue={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  placeholder="Jean"
-                  className="w-full border-gray-100 bg-gray-50/50 focus:bg-white focus:border-[#00A09D] focus:ring-[6px] focus:ring-[#00A09D]/5 transition-all py-4 px-6 rounded-2xl border-2 text-sm font-semibold shadow-inner"
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setFirstName(e.target.value)
+                  }
+                  placeholder="Votre prénom"
+                  type="text"
+                  className="w-full border-gray-100 bg-gray-50/50 focus:bg-white focus:border-[#00A09D] focus:ring-[6px] focus:ring-[#00A09D]/5 transition-all py-5 px-7 rounded-2xl border-2 text-sm font-semibold"
                 />
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <Label className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">
                   Nom
                 </Label>
                 <Input
                   defaultValue={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  placeholder="Dupont"
-                  className="w-full border-gray-100 bg-gray-50/50 focus:bg-white focus:border-[#00A09D] focus:ring-[6px] focus:ring-[#00A09D]/5 transition-all py-4 px-6 rounded-2xl border-2 text-sm font-semibold shadow-inner"
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setLastName(e.target.value)
+                  }
+                  placeholder="Votre nom"
+                  type="text"
+                  className="w-full border-gray-100 bg-gray-50/50 focus:bg-white focus:border-[#00A09D] focus:ring-[6px] focus:ring-[#00A09D]/5 transition-all py-5 px-7 rounded-2xl border-2 text-sm font-semibold"
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">
-                Email Professionnel / Matricule
+                Email
               </Label>
               <Input
                 defaultValue={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setEmail(e.target.value)
+                }
+                placeholder="admin@stockmaster.com"
                 type="email"
-                placeholder="gestionnaire.pfe@stockmaster.com"
-                className="w-full border-gray-100 bg-gray-50/50 focus:bg-white focus:border-[#00A09D] focus:ring-[6px] focus:ring-[#00A09D]/5 transition-all py-4 px-6 rounded-2xl border-2 text-sm font-semibold shadow-inner"
+                className="w-full border-gray-100 bg-gray-50/50 focus:bg-white focus:border-[#00A09D] focus:ring-[6px] focus:ring-[#00A09D]/5 transition-all py-5 px-7 rounded-2xl border-2 text-sm font-semibold"
               />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-3">
+              <Label className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">
+                Téléphone
+              </Label>
+              <Input
+                defaultValue={phone}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setPhone(e.target.value)
+                }
+                placeholder="+216 XX XXX XXX"
+                type="text"
+                className="w-full border-gray-100 bg-gray-50/50 focus:bg-white focus:border-[#00A09D] focus:ring-[6px] focus:ring-[#00A09D]/5 transition-all py-5 px-7 rounded-2xl border-2 text-sm font-semibold"
+              />
+            </div>
+
+            <div className="space-y-3">
+              <Label className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">
+                Date de naissance
+              </Label>
+              <Input
+                defaultValue={birthDate}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setBirthDate(e.target.value)
+                }
+                type="date"
+                className="w-full border-gray-100 bg-gray-50/50 focus:bg-white focus:border-[#00A09D] focus:ring-[6px] focus:ring-[#00A09D]/5 transition-all py-5 px-7 rounded-2xl border-2 text-sm font-semibold"
+              />
+            </div>
+
+            <div className="space-y-3">
+              <Label className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">
+                Adresse
+              </Label>
+              <Input
+                defaultValue={address}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setAddress(e.target.value)
+                }
+                placeholder="Votre adresse"
+                type="text"
+                className="w-full border-gray-100 bg-gray-50/50 focus:bg-white focus:border-[#00A09D] focus:ring-[6px] focus:ring-[#00A09D]/5 transition-all py-5 px-7 rounded-2xl border-2 text-sm font-semibold"
+              />
+            </div>
+
+            <div className="space-y-3">
               <Label className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">
                 Mot de passe
               </Label>
+
               <div className="relative group">
                 <Input
                   defaultValue={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setPassword(e.target.value)
+                  }
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••••••"
-                  className="w-full border-gray-100 bg-gray-50/50 focus:bg-white focus:border-[#00A09D] focus:ring-[6px] focus:ring-[#00A09D]/5 transition-all py-4 px-6 rounded-2xl border-2 text-sm font-semibold shadow-inner"
+                  className="w-full border-gray-100 bg-gray-50/50 focus:bg-white focus:border-[#00A09D] focus:ring-[6px] focus:ring-[#00A09D]/5 transition-all py-5 px-7 rounded-2xl border-2 text-sm font-semibold"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-6 top-1/2 -translate-y-1/2 text-gray-300 hover:text-[#00A09D] transition-colors"
                 >
-                  {showPassword ? <EyeIcon size={20} /> : <EyeCloseIcon size={20} />}
+                  {showPassword ? <EyeIcon size={22} /> : <EyeCloseIcon size={22} />}
                 </button>
               </div>
             </div>
@@ -164,27 +227,27 @@ export default function SignUpForm() {
                 <Checkbox checked={isChecked} onChange={setIsChecked} />
               </div>
               <p className="text-[11px] text-gray-500 font-bold leading-relaxed select-none">
-                J'accepte les{" "}
+                J&apos;accepte les{" "}
                 <span className="text-[#00A09D] cursor-pointer hover:underline font-extrabold tracking-tighter">
-                  Conditions d'Utilisation
+                  Conditions d&apos;Utilisation
                 </span>{" "}
                 et la{" "}
                 <span className="text-[#00A09D] cursor-pointer hover:underline font-extrabold tracking-tighter">
                   Politique de Confidentialité
-                </span>{" "}
-                de StockMaster.
+                </span>.
               </p>
             </div>
 
             {error && <p className="text-red-500 font-bold text-sm">{error}</p>}
             {success && <p className="text-green-600 font-bold text-sm">{success}</p>}
 
-            <Button
+            <button
+              type="submit"
               className="w-full py-7 bg-[#00A09D] hover:bg-[#008784] text-white font-black text-[11px] uppercase tracking-[0.3em] rounded-2xl shadow-[0_20px_40px_rgba(0,160,157,0.25)] transition-all transform hover:-translate-y-1.5 active:scale-[0.97]"
               disabled={loading}
             >
               {loading ? "Création en cours..." : "Créer mon accès gestionnaire"}
-            </Button>
+            </button>
           </form>
 
           <div className="mt-12 text-center pt-8 border-t border-gray-100">
@@ -201,6 +264,7 @@ export default function SignUpForm() {
         </div>
       </div>
 
+      {/* RIGHT SIDE */}
       <div className="hidden lg:flex w-1/2 bg-[#00A09D] relative flex-col justify-between p-20 overflow-hidden group">
         <div className="absolute inset-0 z-0 transition-transform duration-1000 group-hover:scale-110">
           <Image
@@ -229,9 +293,10 @@ export default function SignUpForm() {
           </div>
 
           <h2 className="text-6xl font-black leading-[1.05] text-white tracking-tighter mb-6">
-            L'excellence <br />
+            L&apos;excellence <br />
             <span className="text-emerald-300 italic">à chaque flux.</span>
           </h2>
+
           <p className="text-emerald-50/80 text-xl max-w-sm leading-relaxed font-light">
             Gérez vos emballages de produits alimentaires avec une traçabilité totale et sécurisée.
           </p>

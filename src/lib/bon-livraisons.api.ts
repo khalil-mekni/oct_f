@@ -81,65 +81,78 @@ export async function getBonLivraison(id: string | number) {
 }
 
 const CREATE_BON_LIVRAISON = `
-  mutation CreateBonLivraison($input: CreateBonLivraisonInput!) {
-    createBonLivraison(input: $input) {
+  mutation CreateBonLivraison($input: CreateBonLivraisonInput!, $document_bl: Upload!) {
+    createBonLivraison(input: $input, document_bl: $document_bl) {
       ${BON_LIVRAISON_FIELDS}
     }
   }
 `;
 
-export async function createBonLivraison(input: CreateBonLivraisonInput) {
-  return graphqlRequest<{ createBonLivraison: BonLivraison }>(
-    CREATE_BON_LIVRAISON,
-    { input }
-  );
+export async function createBonLivraison(
+  input: CreateBonLivraisonInput,
+  file?: File
+) {
+  if (file) {
+    return createBonLivraisonWithFile(input, file);
+  }
+
+  throw new Error("Le fichier du bon de livraison est obligatoire.");
 }
 
 export async function createBonLivraisonWithFile(
   input: CreateBonLivraisonInput,
   file: File
 ) {
-  const endpoint = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || "http://localhost:8000/graphql";
+  const endpoint =
+    process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || "http://localhost:8000/graphql";
 
   const operations = JSON.stringify({
-    query: `
-      mutation CreateBonLivraison($input: CreateBonLivraisonInput!, $document_bl: Upload!) {
-        createBonLivraison(input: $input, document_bl: $document_bl) {
-          ${BON_LIVRAISON_FIELDS}
-        }
-      }
-    `,
+    query: CREATE_BON_LIVRAISON,
     variables: {
-      input: {
-        ...input,
-        document_bl: null,
-      },
+      input,
       document_bl: null,
-    },  
+    },
   });
 
   const map = JSON.stringify({
-    "0": ["variables.input.document_bl", "variables.document_bl"],
+    "0": ["variables.document_bl"],
   });
 
   const formData = new FormData();
   formData.append("operations", operations);
   formData.append("map", map);
-  formData.append("0", file); 
+  formData.append("0", file);
 
   const response = await fetch(endpoint, {
     method: "POST",
     body: formData,
   });
 
-  const result = await response.json();
+  const rawText = await response.text();
+  console.log("RAW GRAPHQL RESPONSE:", rawText);
 
-  if (!response.ok || result.errors) {
-    console.error("GraphQL Errors:", result.errors);
-    throw new Error(result?.errors?.[0]?.message || "Erreur upload BL");
+  let result: any = {};
+  try {
+    result = rawText ? JSON.parse(rawText) : {};
+  } catch {
+    throw new Error(`Réponse non JSON du serveur: ${rawText}`);
   }
 
-  return result.data.createBonLivraison;
+  if (!response.ok || result.errors) {
+    console.error("GraphQL full result:", result);
+    console.error(
+      "GraphQL errors JSON:",
+      JSON.stringify(result.errors, null, 2)
+    );
+
+    throw new Error(
+      result?.errors?.[0]?.extensions?.debugMessage ||
+        result?.errors?.[0]?.message ||
+        "Erreur upload BL"
+    );
+  }
+
+  return result.data.createBonLivraison as BonLivraison;
 }
 
 const UPDATE_BON_LIVRAISON = `
@@ -159,11 +172,14 @@ function sanitizeBonLivraisonInput(input: UpdateBonLivraisonInput) {
     entrepot_id,
     statut,
   } = input;
+
   const sanitized: UpdateBonLivraisonInput = {};
+
   if (date_reception !== undefined) sanitized.date_reception = date_reception;
   if (emballage_id !== undefined) sanitized.emballage_id = emballage_id;
   if (quantite_recue !== undefined) sanitized.quantite_recue = quantite_recue;
-  if (numero_commande !== undefined) sanitized.numero_commande = numero_commande;
+  if (numero_commande !== undefined)
+    sanitized.numero_commande = numero_commande;
   if (entrepot_id !== undefined) sanitized.entrepot_id = entrepot_id;
   if (statut !== undefined) sanitized.statut = statut;
 

@@ -1,16 +1,18 @@
 import "../globals.css";
 import ReactQueryProvider from "@/providers/ReactQueryProvider";
 
-export default function RootLayout({
+export default function Layout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fr" suppressHydrationWarning>
-      <body suppressHydrationWarning className="dark:bg-gray-900">
-        <ReactQueryProvider>{children}</ReactQueryProvider>
-      </body>
-    </html>
+    <>
+      <ReactQueryProvider>
+        <div className="dark:bg-gray-900 min-h-screen">
+          {children}
+        </div>
+      </ReactQueryProvider>
+    </>
   );
 }

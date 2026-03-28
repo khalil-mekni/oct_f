@@ -1,0 +1,5 @@
+{
+    "require": {
+        "nuwave/lighthouse": "^6.65"
+    }
+}

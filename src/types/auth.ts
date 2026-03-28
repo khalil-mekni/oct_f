@@ -1,34 +1,23 @@
 export type User = {
   id: string;
   name: string;
+  first_name: string;
+  last_name: string;
   email: string;
   role: string;
+  phone?: string | null;
+  birth_date?: string | null;
+  address?: string | null;
+  is_active?: boolean;
+  last_login_at?: string | null;
 };
 
-export type AuthPayload = {
-  token: string;
-  user: User;
-};
-
-// Input pour login
-export type LoginInput = {
-  email: string;
-  password: string;
-};
-
-// Input pour register
 export type RegisterInput = {
-  name: string;
+  first_name: string;
+  last_name: string;
   email: string;
   password: string;
-  role?: string; 
+  phone?: string;
+  birth_date?: string;
+  address?: string;
 };
-
-// Réponse pour verify email
-export type VerifyEmailResponse = string;
-
-// Réponse pour resend email
-export type ResendVerificationResponse = string;
-
-// Réponse pour logout
-export type LogoutResponse = boolean;

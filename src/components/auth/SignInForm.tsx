@@ -3,7 +3,7 @@
 import React, { useState, ChangeEvent, FormEvent } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "@/icons";
 import Input from "@/components/form/input/InputField";
@@ -14,6 +14,7 @@ import { useAuth } from "@/context/AuthContext";
 
 export default function SignInForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login } = useAuth();
 
   const [email, setEmail] = useState("");
@@ -51,7 +52,8 @@ export default function SignInForm() {
         remember: isChecked,
       });
 
-      router.push("/");
+const redirectTo = searchParams.get("redirect") || "/";
+router.replace(redirectTo);
     } catch (err: any) {
       const message = err?.message || "Erreur lors de la connexion.";
 
@@ -106,7 +108,7 @@ export default function SignInForm() {
             <span className="text-emerald-300 italic">réinventée.</span>
           </h2>
           <p className="text-emerald-50/80 text-xl max-w-md leading-relaxed font-light">
-            Une traçabilité totale pour vos emballages, du fournisseur jusqu'au stockage final.
+            Une traçabilité totale pour vos emballages, du fournisseur jusqu&apos;au stockage final.
           </p>
         </div>
 
@@ -211,12 +213,12 @@ export default function SignInForm() {
 
           <div className="mt-12 text-center pt-8 border-t border-gray-100">
             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-              Vous n'avez pas de compte ?{" "}
+              Vous n&apos;avez pas de compte ?{" "}
               <Link
                 href="/signup"
                 className="text-[#00A09D] hover:text-[#008784] transition-colors ml-1 font-black uppercase tracking-tighter border-b-2 border-[#00A09D]/20"
               >
-                S'inscrire
+                S&apos;inscrire
               </Link>
             </p>
           </div>
