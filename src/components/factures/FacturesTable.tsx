@@ -270,6 +270,18 @@ Gestion Facturation      </div>
           </table>
         </div>
       </div>
+      {/* ✅ PAGINATION ICI */}
+      {pagination?.lastPage > 1 && (
+        <div className="flex justify-center py-4 border-t bg-white">
+          <Pagination
+            currentPage={pagination.currentPage}
+            totalPages={pagination.lastPage}
+            onPageChange={(newPage) => {
+              router.push(`${pathname}?page=${newPage}`);
+            }}
+          />
+        </div>
+      )}
 
       {/* DRAWER FORM */}
       {isDrawerOpen && (

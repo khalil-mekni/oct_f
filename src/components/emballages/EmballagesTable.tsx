@@ -53,12 +53,12 @@ export default function EmballagesTable({ data, total, page, limit, onPageChange
     <div className="flex flex-col min-h-[600px]">
       {/* HEADER : Titre, Stats et Barre de recherche */}
       <EmballagesHeader
-        query={query} 
+        query={query}
         setQuery={setQuery}
         total={total}
-        onOpenNew={() => { 
-          setEditing(null); 
-          setIsOpen(true); 
+        onOpenNew={() => {
+          setEditing(null);
+          setIsOpen(true);
         }}
       />
 
@@ -68,11 +68,16 @@ export default function EmballagesTable({ data, total, page, limit, onPageChange
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
             <EmballagesListView
               rows={filteredRows}
-              onEdit={(item: TableEmballages) => { 
-                setEditing(item); 
-                setIsOpen(true); 
+              onEdit={(item: TableEmballages) => {
+                setEditing(item);
+                setIsOpen(true);
               }}
               onDelete={handleDelete}
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={onPageChange}
+
+
             />
           </div>
         ) : (
@@ -86,19 +91,7 @@ export default function EmballagesTable({ data, total, page, limit, onPageChange
         )}
       </div>
 
-      {/* PAGINATION : Design épuré */}
-      {totalPages > 1 && !query && (
-        <div className="mt-10 flex justify-center items-center gap-8 py-6 bg-white rounded-[2rem] border border-gray-50 shadow-sm">
-          <Pagination
-            currentPage={page}
-            totalPages={totalPages}
-            onPageChange={onPageChange}
-          />
-          <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-l pl-8 border-gray-100">
-            Page {page} sur {totalPages}
-          </div>
-        </div>
-      )}
+
 
       {/* FORMULAIRE : Le Drawer latéral */}
       {isOpen && (

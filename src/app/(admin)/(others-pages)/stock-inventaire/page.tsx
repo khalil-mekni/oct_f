@@ -17,21 +17,25 @@ import InventaireAuditCards from "@/components/inventaire/InventaireAuditCards";
 import InventaireDetailDrawer from "@/components/inventaire/InventaireDetailDrawer";
 import InventaireFormDrawer from "@/components/inventaire/InventaireFormDrawer";
 
-import { listEmballages } from "@/lib/emballages.api"; 
-import { fetchEntrepots } from "@/lib/entrepot.api";   
+import { listEmballages } from "@/lib/emballages.api";
+import { fetchEntrepots } from "@/lib/entrepot.api";
 
 export default function InventairePage() {
   const [data, setData] = useState<TableInventaire[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  const [allEntrepots, setAllEntrepots] = useState<{id: string, label: string}[]>([]);
-  const [allEmballages, setAllEmballages] = useState<{id: string, label: string}[]>([]);
+
+  const [allEntrepots, setAllEntrepots] = useState<{ id: string; label: string }[]>([]);
+  const [allEmballages, setAllEmballages] = useState<{ id: string; label: string }[]>([]);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<TableInventaire | null>(null);
 
   const [selected, setSelected] = useState<TableInventaire | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+
+  // Pagination
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 8;
 
   const [filters, setFilters] = useState<InventaireFilters>({
     search: "",
@@ -45,14 +49,17 @@ export default function InventairePage() {
       const [resInventaires, resEntrepots, resEmballages] = await Promise.all([
         listInventaires(),
         fetchEntrepots(),
-        listEmballages(1, 100) 
+        listEmballages(1, 100),
       ]);
 
       setData(resInventaires.map(normalizeInventaire));
-      
-      setAllEntrepots(resEntrepots.map(e => ({ id: String(e.id), label: e.nom })));
-      setAllEmballages(resEmballages.emballages.data.map(e => ({ id: String(e.id), label: e.name })));
-      
+      setAllEntrepots(resEntrepots.map((e) => ({ id: String(e.id), label: e.nom })));
+      setAllEmballages(
+        resEmballages.emballages.data.map((e) => ({
+          id: String(e.id),
+          label: e.name,
+        }))
+      );
     } catch (err) {
       console.error("Erreur lors du chargement des données:", err);
     } finally {
@@ -65,12 +72,13 @@ export default function InventairePage() {
   }, []);
 
   const handleNewAudit = () => {
-    setEditing(null); 
+    setEditing(null);
     setFormOpen(true);
   };
 
   const filtered = useMemo(() => {
     let rows = [...data];
+
     if (filters.search.trim()) {
       const q = filters.search.toLowerCase();
       rows = rows.filter(
@@ -79,9 +87,11 @@ export default function InventairePage() {
           r.entrepot_name.toLowerCase().includes(q)
       );
     }
+
     if (filters.entrepot) {
       rows = rows.filter((r) => r.entrepot_id === filters.entrepot);
     }
+
     if (filters.status === "perfect") {
       rows = rows.filter((r) => r.ecart === 0);
     } else if (filters.status === "negative") {
@@ -89,11 +99,32 @@ export default function InventairePage() {
     } else if (filters.status === "positive") {
       rows = rows.filter((r) => r.ecart > 0);
     }
+
     return rows.sort((a, b) => Math.abs(b.ecart) - Math.abs(a.ecart));
   }, [data, filters]);
 
-  const criticalCount = data.filter((i) => Math.abs(i.ecart) > 0).length;
+  // Total des pages
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
 
+  // Si les filtres changent, on revient à la page 1
+  useEffect(() => {
+    setPage(1);
+  }, [filters]);
+
+  // Si la page dépasse le nombre de pages disponible, on revient à 1
+  useEffect(() => {
+    if (page > totalPages && totalPages > 0) {
+      setPage(1);
+    }
+  }, [page, totalPages]);
+
+  // Données paginées
+  const paginatedData = useMemo(() => {
+    const start = (page - 1) * itemsPerPage;
+    return filtered.slice(start, start + itemsPerPage);
+  }, [filtered, page]);
+
+  const criticalCount = data.filter((i) => Math.abs(i.ecart) > 0).length;
 
   const handleCreate = async (payload: any) => {
     try {
@@ -109,7 +140,7 @@ export default function InventairePage() {
     if (!editing) return;
     try {
       const { entrepot_id, emballage_id, ...payloadPourUpdate } = payload;
-      
+
       await updateInventaire(editing.id, payloadPourUpdate);
       setFormOpen(false);
       setEditing(null);
@@ -132,7 +163,6 @@ export default function InventairePage() {
 
   return (
     <div className="space-y-6">
-      
       <InventaireHeader
         loading={loading}
         onRefresh={load}
@@ -143,11 +173,7 @@ export default function InventairePage() {
 
       <InventaireStats data={data} />
 
-      <InventaireFiltersBar
-        data={data}
-        filters={filters}
-        onChange={setFilters}
-      />
+      <InventaireFiltersBar data={data} filters={filters} onChange={setFilters} />
 
       <InventaireCriticalPanel
         data={filtered}
@@ -158,10 +184,10 @@ export default function InventairePage() {
       />
 
       <InventaireAuditCards
-        data={filtered}
-        onAdjust={async (id, val) => { 
-          await updateInventaire(id, { stock_physique: val }); 
-          await load(); 
+        data={paginatedData}
+        onAdjust={async (id, val) => {
+          await updateInventaire(id, { stock_physique: val });
+          await load();
         }}
         onView={(item) => {
           setSelected(item);
@@ -172,6 +198,9 @@ export default function InventairePage() {
           setFormOpen(true);
         }}
         onDelete={handleDelete}
+        currentPage={page}
+        totalPages={totalPages}
+        onPageChange={setPage}
       />
 
       <InventaireDetailDrawer
@@ -186,8 +215,8 @@ export default function InventairePage() {
       <InventaireFormDrawer
         open={formOpen}
         item={editing}
-        entrepots={allEntrepots}   
-        emballages={allEmballages} 
+        entrepots={allEntrepots}
+        emballages={allEmballages}
         onClose={() => {
           setFormOpen(false);
           setEditing(null);

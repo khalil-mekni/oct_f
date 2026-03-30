@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { 
-  fetchEntrepots, 
-  createEntrepot, 
-  updateEntrepot, 
-  type Entrepot 
+import {
+  fetchEntrepots,
+  createEntrepot,
+  updateEntrepot,
+  type Entrepot
 } from "@/lib/entrepot.api";
 import { EntrepotsListView } from "@/components/entrepot/EntrepotsListView";
 import { EntrepotSkeleton } from "@/components/entrepot/EntrepotSkeleton";
@@ -18,11 +18,12 @@ export default function EntrepotsPage() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Entrepot | null>(null);
-  
+
   // États de filtrage
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState<"ALL" | "CRITICAL">("ALL");
-
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
   async function loadData() {
     setLoading(true);
     try {
@@ -40,16 +41,25 @@ export default function EntrepotsPage() {
   // Logique de filtrage intelligente
   const filteredItems = useMemo(() => {
     return items.filter(it => {
-      const matchesSearch = it.nom?.toLowerCase().includes(search.toLowerCase()) || 
-                            it.adresse?.toLowerCase().includes(search.toLowerCase());
-      
+      const matchesSearch = it.nom?.toLowerCase().includes(search.toLowerCase()) ||
+        it.adresse?.toLowerCase().includes(search.toLowerCase());
+
       const occupation = it.capacite_totale ? ((Number(it.capacite_totale) - Number(it.capacite_disponible)) / Number(it.capacite_totale)) * 100 : 0;
       const isCritical = filterType === "CRITICAL" ? occupation > 80 : true;
 
       return matchesSearch && isCritical;
     });
   }, [items, search, filterType]);
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, filterType]);
 
+  const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+
+  const paginatedItems = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredItems.slice(start, start + itemsPerPage);
+  }, [filteredItems, currentPage]);
   const handleSave = async (formData: Partial<Entrepot>) => {
     try {
       if (editingItem) {
@@ -68,16 +78,16 @@ export default function EntrepotsPage() {
   return (
     <div className="flex flex-col h-screen bg-[#F0F4F4]">
       {/* 1. Header Brutaliste */}
-      <EntrepotsHeader 
-        count={items.length} 
-        onAdd={() => { setEditingItem(null); setIsModalOpen(true); }} 
+      <EntrepotsHeader
+        count={items.length}
+        onAdd={() => { setEditingItem(null); setIsModalOpen(true); }}
       />
 
       {/* 2. Barre de Recherche & Filtres Rapides */}
       <div className="px-8 pb-6 flex flex-wrap items-center gap-4">
         <div className="relative flex-1 max-w-md group">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-[#00A09D] transition-colors" size={18} />
-          <input 
+          <input
             type="text"
             placeholder="Rechercher un site ou une adresse..."
             className="w-full pl-12 pr-4 py-4 bg-white border-2 border-transparent rounded-2xl shadow-sm outline-none focus:border-[#00A09D]/20 focus:ring-4 focus:ring-[#00A09D]/5 transition-all text-[11px] font-black uppercase tracking-widest"
@@ -87,13 +97,13 @@ export default function EntrepotsPage() {
         </div>
 
         <div className="flex bg-white p-1.5 rounded-2xl shadow-sm border border-gray-100">
-          <button 
+          <button
             onClick={() => setFilterType("ALL")}
             className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase transition-all ${filterType === "ALL" ? "bg-gray-900 text-white shadow-lg" : "text-gray-400 hover:text-gray-600"}`}
           >
             Tous les sites
           </button>
-          <button 
+          <button
             onClick={() => setFilterType("CRITICAL")}
             className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase transition-all flex items-center gap-2 ${filterType === "CRITICAL" ? "bg-red-500 text-white shadow-lg" : "text-gray-400 hover:text-red-500"}`}
           >
@@ -108,16 +118,19 @@ export default function EntrepotsPage() {
         {loading ? (
           <EntrepotSkeleton />
         ) : filteredItems.length > 0 ? (
-          <EntrepotsListView 
-            rows={filteredItems} 
-            onEdit={(it) => { setEditingItem(it); setIsModalOpen(true); }} 
+          <EntrepotsListView
+            rows={paginatedItems}
+            onEdit={(it) => { setEditingItem(it); setIsModalOpen(true); }}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
           />
         ) : (
           <div className="flex flex-col items-center justify-center h-[50vh] text-center">
-             <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                <Filter className="text-gray-300" size={32} />
-             </div>
-             <p className="text-gray-400 font-black uppercase text-[10px] tracking-widest">Aucun entrepôt ne correspond à vos critères</p>
+            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+              <Filter className="text-gray-300" size={32} />
+            </div>
+            <p className="text-gray-400 font-black uppercase text-[10px] tracking-widest">Aucun entrepôt ne correspond à vos critères</p>
           </div>
         )}
       </div>
