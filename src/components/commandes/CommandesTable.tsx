@@ -2,31 +2,18 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import Pagination from "@/components/tables/Pagination";
-import {
-  cancelCommande,
-  createCommande,
-  dropCommande,
-  normalizeCommande,
-  updateCommande,
-} from "@/lib/commandes.api";
-import {
-  CommandeStatut,
-  CommandesPaginatorInfo,
-  ContratForCommande,
-  CreateCommandeInput,
-  EmballageOption,
-  EntrepotOption,
-  FournisseurOption,
-  TableCommande,
-  UpdateCommandeInput,
-} from "@/types/commandes";
+import { cancelCommande, createCommande, dropCommande, normalizeCommande, updateCommande, } from "@/lib/commandes.api";
+import { CommandeStatut, CommandesPaginatorInfo, ContratForCommande, CreateCommandeInput, EmballageOption, EntrepotOption, FournisseurOption, TableCommande, UpdateCommandeInput, } from "@/types/commandes";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { 
-  X, Plus, Search, Edit2, Trash2, Ban, 
+import {
+  X, Plus, Search, Edit2, Trash2, Ban,
   Package, Truck, Calendar, AlertCircle, Info, ArrowRight,
   ChevronDown, Timer, History, CheckCircle2
 } from "lucide-react";
-
+import OcrUploadButton from "@/components/common/OcrUploadButton";
+import OcrUploadModal from "@/components/common/OcrUploadModal";
+import { OcrCommandeMappedData } from "@/types/ocr";
+import { Upload } from "lucide-react";
 type Id = string | number;
 
 // --- AJUSTEMENT DES TYPES POUR TES DONNÉES RÉELLES ---
@@ -69,19 +56,19 @@ const OrderTimelineDetail = ({ item, emballageLabel }: { item: TableCommande; em
 
   // Calcul des jours
   const joursRestants = Math.ceil((datePrevue.getTime() - aujourdhui.getTime()) / (1000 * 60 * 60 * 24));
-  
+
   // Utilisation de tes champs : quantite_recue_total et reste
   const qteTotale = Number(item.quantite || 0);
-  const qteRecue = Number((item as any).quantite_recue_total || 0); 
+  const qteRecue = Number((item as any).quantite_recue_total || 0);
   const resteARecevoir = Number((item as any).reste || 0);
-  
+
   const ratio = qteTotale > 0 ? Math.min((qteRecue / qteTotale) * 100, 100) : 0;
   const estEnRetard = joursRestants < 0 && item.statut !== "RECEPTIONNEE";
 
   return (
     <div className="bg-gray-50/80 p-8 border-t border-gray-100 animate-in slide-in-from-top duration-300">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-        
+
         {/* COL 1: ANALYSE TEMPS */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 text-[10px] font-black uppercase text-gray-400 tracking-widest">
@@ -89,7 +76,7 @@ const OrderTimelineDetail = ({ item, emballageLabel }: { item: TableCommande; em
           </div>
           <div className={`p-5 rounded-[2rem] border-2 shadow-sm flex items-center gap-4 ${estEnRetard ? 'bg-red-50 border-red-100' : 'bg-white border-white'}`}>
             <div className={`h-12 w-12 rounded-2xl flex items-center justify-center ${estEnRetard ? 'bg-red-500 text-white' : 'bg-indigo-600 text-white'}`}>
-               <Timer className="h-6 w-6" />
+              <Timer className="h-6 w-6" />
             </div>
             <div>
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Échéance</p>
@@ -107,46 +94,79 @@ const OrderTimelineDetail = ({ item, emballageLabel }: { item: TableCommande; em
             <span className="text-indigo-600 font-black">{ratio.toFixed(1)}%</span>
           </div>
           <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm space-y-3">
-             <div className="flex justify-between text-xs font-black">
-                <span className="text-gray-400">Total attendu:</span>
-                <span className="text-gray-900">{qteTotale} {emballageLabel}</span>
-             </div>
-             <div className="h-3 w-full bg-gray-100 rounded-full overflow-hidden">
-                <div className={`h-full transition-all duration-1000 ${resteARecevoir < 0 ? 'bg-amber-500' : 'bg-indigo-600'}`} style={{ width: `${ratio}%` }} />
-             </div>
-             <div className="flex justify-between items-center">
-                <p className="text-[10px] font-bold text-gray-400 uppercase">Déjà reçu: <span className="text-indigo-600">{qteRecue}</span></p>
-                {resteARecevoir > 0 ? (
-                    <p className="text-[10px] font-bold text-amber-600 uppercase italic">Reste: {resteARecevoir}</p>
-                ) : resteARecevoir < 0 ? (
-                    <p className="text-[10px] font-bold text-red-600 uppercase italic">Surplus: {Math.abs(resteARecevoir)}</p>
-                ) : (
-                    <p className="text-[10px] font-bold text-green-600 uppercase">Complet</p>
-                )}
-             </div>
+            <div className="flex justify-between text-xs font-black">
+              <span className="text-gray-400">Total attendu:</span>
+              <span className="text-gray-900">{qteTotale} {emballageLabel}</span>
+            </div>
+            <div className="h-3 w-full bg-gray-100 rounded-full overflow-hidden">
+              <div className={`h-full transition-all duration-1000 ${resteARecevoir < 0 ? 'bg-amber-500' : 'bg-indigo-600'}`} style={{ width: `${ratio}%` }} />
+            </div>
+            <div className="flex justify-between items-center">
+              <p className="text-[10px] font-bold text-gray-400 uppercase">Déjà reçu: <span className="text-indigo-600">{qteRecue}</span></p>
+              {resteARecevoir > 0 ? (
+                <p className="text-[10px] font-bold text-amber-600 uppercase italic">Reste: {resteARecevoir}</p>
+              ) : resteARecevoir < 0 ? (
+                <p className="text-[10px] font-bold text-red-600 uppercase italic">Surplus: {Math.abs(resteARecevoir)}</p>
+              ) : (
+                <p className="text-[10px] font-bold text-green-600 uppercase">Complet</p>
+              )}
+            </div>
           </div>
         </div>
 
         {/* COL 3: DATES CLÉS */}
         <div className="space-y-4">
-           <div className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Dates de suivi</div>
-           <div className="space-y-3 bg-white/50 p-4 rounded-2xl border border-dashed border-gray-200">
-              <div className="flex items-center justify-between">
-                 <span className="text-[10px] font-bold text-gray-400 uppercase">Création</span>
-                 <span className="text-xs font-black text-gray-900">{formatDate(item.date_commande)}</span>
-              </div>
-              <div className="h-px bg-gray-100 w-full" />
-              <div className="flex items-center justify-between">
-                 <span className="text-[10px] font-bold text-gray-400 uppercase">Livraison Prévue</span>
-                 <span className="text-xs font-black text-gray-900">{formatDate(item.date_livraison_prevue)}</span>
-              </div>
-           </div>
+          <div className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Dates de suivi</div>
+          <div className="space-y-3 bg-white/50 p-4 rounded-2xl border border-dashed border-gray-200">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-gray-400 uppercase">Création</span>
+              <span className="text-xs font-black text-gray-900">{formatDate(item.date_commande)}</span>
+            </div>
+            <div className="h-px bg-gray-100 w-full" />
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-gray-400 uppercase">Livraison Prévue</span>
+              <span className="text-xs font-black text-gray-900">{formatDate(item.date_livraison_prevue)}</span>
+            </div>
+          </div>
         </div>
 
       </div>
     </div>
   );
 };
+function normalizeText(value?: string | null) {
+  return (value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+}
+
+function findOptionIdByLabel(
+  options: Array<{ id: string | number; label: string }>,
+  target?: string
+) {
+  if (!target) return "";
+
+  const normalizedTarget = normalizeText(target);
+
+  const exact = options.find(
+    (item) => normalizeText(item.label) === normalizedTarget
+  );
+  if (exact) return String(exact.id);
+
+  const includes = options.find((item) =>
+    normalizeText(item.label).includes(normalizedTarget)
+  );
+  if (includes) return String(includes.id);
+
+  const reverseIncludes = options.find((item) =>
+    normalizedTarget.includes(normalizeText(item.label))
+  );
+  if (reverseIncludes) return String(reverseIncludes.id);
+
+  return "";
+}
 
 export default function CommandesTable({
   data,
@@ -171,7 +191,8 @@ export default function CommandesTable({
   const [query, setQuery] = useState("");
   const [submitLoading, setSubmitLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-
+  const [isOcrOpen, setIsOcrOpen] = useState(false);
+  const [ocrRawText, setOcrRawText] = useState("");
   const router = useRouter();
 
   useEffect(() => { setRows(data); }, [data]);
@@ -193,8 +214,8 @@ export default function CommandesTable({
 
   const activeContract = useMemo(() => {
     if (!form.fournisseur_id || !form.emballage_id) return null;
-    return contrats.find(c => 
-      String(c.fournisseur_id) === String(form.fournisseur_id) && 
+    return contrats.find(c =>
+      String(c.fournisseur_id) === String(form.fournisseur_id) &&
       String(c.emballage_id) === String(form.emballage_id) &&
       c.statut.toUpperCase() === "ACTIF"
     ) || null;
@@ -207,8 +228,12 @@ export default function CommandesTable({
     const saisie = Number(form.quantite || 0);
     const restant = total - realise;
     const pourcentage = Math.min(((realise + saisie) / total) * 100, 100);
-    return { total, realise, restant, pourcentage, depasse: saisie > restant };
+
+    const surplus = saisie - restant;
+
+    return { total, realise, restant, pourcentage, depasse: saisie > restant, surplus };
   }, [activeContract, form.quantite]);
+
 
   // --- ACTIONS ---
   const openNew = () => { setEditing(null); setForm(emptyForm); setErrorMessage(""); setIsDrawerOpen(true); };
@@ -271,44 +296,104 @@ export default function CommandesTable({
     } catch (err: any) { setErrorMessage(err.message || "Erreur lors de l'enregistrement"); } finally { setSubmitLoading(false); }
   }
 
-// 1. Calculer le nombre d'éléments par statut pour les badges
-const statusCounts = useMemo(() => {
-  const counts: Record<string, number> = {
-    EN_ATTENTE: 0,
-    VALIDEE: 0,
-    PARTIELLEMENT_RECEPTIONNEE: 0,
-    RECEPTIONNEE: 0,
-    ANNULEE: 0,
-  };
-  
-  rows.forEach((item) => {
-    if (counts[item.statut] !== undefined) {
-      counts[item.statut]++;
+  // 1. Calculer le nombre d'éléments par statut pour les badges
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = {
+      EN_ATTENTE: 0,
+      VALIDEE: 0,
+      PARTIELLEMENT_RECEPTIONNEE: 0,
+      RECEPTIONNEE: 0,
+      ANNULEE: 0,
+    };
+
+    rows.forEach((item) => {
+      if (counts[item.statut] !== undefined) {
+        counts[item.statut]++;
+      }
+    });
+
+    return counts;
+  }, [rows]);
+
+  // 2. Mettre à jour la logique de filtrage pour qu'elle comprenne les statuts
+  const filteredRows = useMemo(() => {
+    const q = query.trim().toUpperCase();
+    if (!q) return rows;
+
+    // Liste des statuts possibles
+    const statusList = ['EN_ATTENTE', 'VALIDEE', 'PARTIELLEMENT_RECEPTIONNEE', 'RECEPTIONNEE', 'ANNULEE'];
+
+    if (statusList.includes(q)) {
+      // Si on a cliqué sur un bouton de statut
+      return rows.filter(r => r.statut === q);
     }
-  });
-  
-  return counts;
-}, [rows]);
 
-// 2. Mettre à jour la logique de filtrage pour qu'elle comprenne les statuts
-const filteredRows = useMemo(() => {
-  const q = query.trim().toUpperCase();
-  if (!q) return rows;
+    // Sinon, recherche textuelle (Numéro ou Fournisseur)
+    return rows.filter(r =>
+      r.numero_commande?.toLowerCase().includes(query.toLowerCase()) ||
+      fournisseursMap.get(String(r.fournisseur_id))?.toLowerCase().includes(query.toLowerCase())
+    );
+  }, [rows, query, fournisseursMap]);
+  function applyOcrToCommandeForm(data: OcrCommandeMappedData) {
+    setEditing(null);
+    setErrorMessage("");
 
-  // Liste des statuts possibles
-  const statusList = ['EN_ATTENTE', 'VALIDEE', 'PARTIELLEMENT_RECEPTIONNEE', 'RECEPTIONNEE', 'ANNULEE'];
+    setForm((prev) => {
+      const updated = { ...prev };
 
-  if (statusList.includes(q)) {
-    // Si on a cliqué sur un bouton de statut
-    return rows.filter(r => r.statut === q);
+      if (data.date_livraison_prevue) {
+        updated.date_livraison_prevue = normalizeDateForInput(
+          data.date_livraison_prevue
+        );
+      }
+
+      if (data.quantite !== undefined && data.quantite !== null) {
+        updated.quantite = String(data.quantite);
+      }
+
+      if (data.emballage_nom) {
+        const id = findOptionIdByLabel(emballages, data.emballage_nom);
+        if (id) {
+          updated.emballage_id = id;
+        }
+      }
+
+      if (data.fournisseur_nom) {
+        const id = findOptionIdByLabel(fournisseurs, data.fournisseur_nom);
+        if (id) {
+          updated.fournisseur_id = id;
+        }
+      }
+
+      if (data.entrepot_nom) {
+        const id = findOptionIdByLabel(entrepots, data.entrepot_nom);
+        if (id) {
+          updated.entrepot_id = id;
+        }
+      }
+
+      updated.statut = "EN_ATTENTE";
+
+      return updated;
+    });
+
+    setIsDrawerOpen(true);
+  }
+  function normalizeDateForInput(value?: string | null) {
+    if (!value) return "";
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      return value;
+    }
+
+    const fr = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (fr) {
+      return `${fr[3]}-${fr[2]}-${fr[1]}`;
+    }
+
+    return "";
   }
 
-  // Sinon, recherche textuelle (Numéro ou Fournisseur)
-  return rows.filter(r => 
-    r.numero_commande?.toLowerCase().includes(query.toLowerCase()) || 
-    fournisseursMap.get(String(r.fournisseur_id))?.toLowerCase().includes(query.toLowerCase())
-  );
-}, [rows, query, fournisseursMap]);
   return (
     <div className="min-h-screen bg-gray-50/50 p-4 lg:p-8 font-sans">
       {/* HEADER SECTION */}
@@ -317,108 +402,132 @@ const filteredRows = useMemo(() => {
           <h1 className="text-3xl font-black text-gray-900 tracking-tight">Flux Commandes</h1>
           <p className="text-sm text-gray-500 font-medium italic">Suivi des réceptions et délais</p>
         </div>
-        
+
         <div className="flex items-center gap-3">
           <div className="relative group">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-600 transition-colors" />
-            <input type="text" placeholder="Rechercher une commande..." value={query} onChange={(e) => setQuery(e.target.value)} className="w-full rounded-2xl border border-gray-200 bg-white pl-10 pr-4 py-3 text-sm outline-none focus:ring-4 focus:ring-indigo-600/5 focus:border-indigo-600 md:w-80 transition-all shadow-sm" />
+            <input
+              type="text"
+              placeholder="Rechercher une commande..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="w-full rounded-2xl border border-gray-200 bg-white pl-10 pr-4 py-3 text-sm outline-none focus:ring-4 focus:ring-indigo-600/5 focus:border-indigo-600 md:w-80 transition-all shadow-sm"
+            />
           </div>
-          <button onClick={openNew} className="flex items-center gap-2 rounded-2xl bg-indigo-600 px-6 py-3 text-sm font-black text-white shadow-xl shadow-indigo-200 hover:bg-indigo-700 active:scale-95 transition-all">
-            <Plus className="h-4 w-4" /> NOUVEAU
+
+
+          <OcrUploadButton
+            onClick={() => setIsOcrOpen(true)}
+            label={<Upload className="h-4 w-4" />}
+            className="bg-white text-gray-900 border-2 border-gray-900 px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-900 hover:text-white transition-all shadow-[8px_8px_0px_rgba(0,160,157,0.2)]"
+          />
+
+          <button
+            onClick={openNew}
+            className="bg-white text-gray-900 border-2 border-gray-900 px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-900 hover:text-white transition-all shadow-[8px_8px_0px_rgba(0,160,157,0.2)]"
+          >
+            NOUVEAU
           </button>
         </div>
       </div>
 
-{/* SECTION ANALYSE RAPIDE */}
-<div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-  {/* Widget 1: Volume Total Attendu */}
-  <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex items-center gap-4">
-    <div className="h-12 w-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-      <Package className="h-6 w-6" />
-    </div>
-    <div>
-      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Flux Total</p>
-      <p className="text-xl font-black text-gray-900">
-        {rows.reduce((acc, curr) => acc + Number(curr.quantite || 0), 0)}
-      </p>
-    </div>
-  </div>
+      {/* SECTION ANALYSE RAPIDE */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        {/* Widget 1: Volume Total Attendu */}
+        <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex items-center gap-4">
+          <div className="h-12 w-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+            <Package className="h-6 w-6" />
+          </div>
+          <div>
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Flux Total</p>
+            <p className="text-xl font-black text-gray-900">
+              {rows.reduce((acc, curr) => acc + Number(curr.quantite || 0), 0)}
+            </p>
+          </div>
+        </div>
 
-  {/* Widget 2: Reste à recevoir (Somme des reliquats) */}
-  <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex items-center gap-4">
-    <div className="h-12 w-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
-      <ArrowRight className="h-6 w-6" />
-    </div>
-    <div>
-      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Reliquat Total</p>
-      <p className="text-xl font-black text-amber-600">
-        {rows.reduce((acc, curr) => acc + Math.max(0, Number(curr.reste || 0)), 0)}
-      </p>
-    </div>
-  </div>
+        {/* Widget 2: Reste à recevoir (Somme des reliquats) */}
+        <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex items-center gap-4">
+          <div className="h-12 w-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
+            <ArrowRight className="h-6 w-6" />
+          </div>
+          <div>
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Reliquat Total</p>
+            <p className="text-xl font-black text-amber-600">
+              {rows.reduce((acc, curr) => acc + Math.max(0, Number(curr.reste || 0)), 0)}
+            </p>
+          </div>
+        </div>
 
-  {/* Widget 3: Alertes Retards */}
-  <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex items-center gap-4">
-    <div className="h-12 w-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center">
-      <AlertCircle className="h-6 w-6" />
-    </div>
-    <div>
-      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">En Retard</p>
-      <p className="text-xl font-black text-red-600">
-        {rows.filter(r => new Date(r.date_livraison_prevue) < new Date() && r.statut !== 'RECEPTIONNEE').length}
-      </p>
-    </div>
-  </div>
+        {/* Widget 3: Alertes Retards */}
+        <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex items-center gap-4">
+          <div className="h-12 w-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center">
+            <AlertCircle className="h-6 w-6" />
+          </div>
+          <div>
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">En Retard</p>
+            <p className="text-xl font-black text-red-600">
+              {rows.filter(r => new Date(r.date_livraison_prevue) < new Date() && r.statut !== 'RECEPTIONNEE').length}
+            </p>
+          </div>
+        </div>
 
-  {/* Widget 4: Taux de Service */}
-  <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex items-center gap-4">
-    <div className="h-12 w-12 rounded-2xl bg-green-50 text-green-600 flex items-center justify-center">
-      <CheckCircle2 className="h-6 w-6" />
-    </div>
-    <div>
-      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Taux Réception</p>
-      <p className="text-xl font-black text-green-600">
-        {Math.round((rows.filter(r => r.statut === 'RECEPTIONNEE').length / rows.length) * 100 || 0)}%
-      </p>
-    </div>
-  </div>
-</div>
+        {/* Widget 4: Taux de Service */}
+        <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex items-center gap-4">
+          <div className="h-12 w-12 rounded-2xl bg-green-50 text-green-600 flex items-center justify-center">
+            <CheckCircle2 className="h-6 w-6" />
+          </div>
+          <div>
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Taux Réception</p>
+            <p className="text-xl font-black text-green-600">
+              {Math.round((rows.filter(r => r.statut === 'RECEPTIONNEE').length / rows.length) * 100 || 0)}%
+            </p>
+          </div>
+        </div>
+      </div>
 
-{/* FILTRES RAPIDES AVEC BADGES */}
-<div className="flex gap-3 mb-8 overflow-x-auto pb-4 scrollbar-hide items-center">
-  <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mr-2">Filtrer par :</div>
-  {['TOUT', 'EN_ATTENTE', 'VALIDEE', 'PARTIELLEMENT_RECEPTIONNEE', 'RECEPTIONNEE'].map((s) => {
-    const isActive = s === 'TOUT' ? query === '' : query === s;
-    const count = s === 'TOUT' ? rows.length : (statusCounts[s] || 0);
+      {/* FILTRES RAPIDES AVEC BADGES */}
+      <div className="flex gap-3 mb-8 overflow-x-auto pb-4 scrollbar-hide items-center">
+        <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mr-2">Filtrer par :</div>
+        {['TOUT', 'EN_ATTENTE', 'VALIDEE', 'PARTIELLEMENT_RECEPTIONNEE', 'RECEPTIONNEE'].map((s) => {
+          const isActive = s === 'TOUT' ? query === '' : query === s;
+          const count = s === 'TOUT' ? rows.length : (statusCounts[s] || 0);
 
-    return (
-      <button
-        key={s}
-        onClick={() => setQuery(s === 'TOUT' ? '' : s)}
-        className={`group flex items-center gap-3 px-5 py-3 rounded-2xl text-[10px] font-black tracking-widest transition-all whitespace-nowrap border ${
-          isActive 
-          ? 'bg-gray-900 text-white border-gray-900 shadow-xl shadow-gray-200 scale-105' 
-          : 'bg-white text-gray-500 border-gray-100 hover:border-indigo-200 hover:text-indigo-600'
-        }`}
-      >
-        {s.replace(/_/g, ' ')}
-        <span className={`flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[9px] font-bold transition-colors ${
-          isActive 
-          ? 'bg-indigo-500 text-white' 
-          : 'bg-gray-100 text-gray-500 group-hover:bg-indigo-50 group-hover:text-indigo-600'
-        }`}>
-          {count}
-        </span>
-      </button>
-    );
-  })}
-</div>
+          return (
+            <button
+              key={s}
+              onClick={() => setQuery(s === 'TOUT' ? '' : s)}
+              className={`group flex items-center gap-3 px-5 py-3 rounded-2xl text-[10px] font-black tracking-widest transition-all whitespace-nowrap border ${isActive
+                ? 'bg-gray-900 text-white border-gray-900 shadow-xl shadow-gray-200 scale-105'
+                : 'bg-white text-gray-500 border-gray-100 hover:border-indigo-200 hover:text-indigo-600'
+                }`}
+            >
+              {s.replace(/_/g, ' ')}
+              <span className={`flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[9px] font-bold transition-colors ${isActive
+                ? 'bg-indigo-500 text-white'
+                : 'bg-gray-100 text-gray-500 group-hover:bg-indigo-50 group-hover:text-indigo-600'
+                }`}>
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      <OcrUploadModal<OcrCommandeMappedData>
+        open={isOcrOpen}
+        onClose={() => setIsOcrOpen(false)}
+        entityType="commande"
+        onUseData={(data, rawText) => {
+          setOcrRawText(rawText || "");
+          applyOcrToCommandeForm(data);
+        }}
+      />
 
       {/* TABLE SECTION */}
       <div className="overflow-hidden rounded-[2.5rem] border border-gray-100 bg-white shadow-2xl shadow-gray-200/40">
         <div className="overflow-x-auto">
 
-          
+
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-gray-50 bg-gray-50/30 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
@@ -433,12 +542,12 @@ const filteredRows = useMemo(() => {
             <tbody className="divide-y divide-gray-50">
               {filteredRows.map((item) => (
                 <React.Fragment key={item.id}>
-                  <tr 
+                  <tr
                     onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}
                     className={`group cursor-pointer transition-all ${expandedId === item.id ? 'bg-indigo-50/40' : 'hover:bg-gray-50/50'}`}
                   >
                     <td className="px-8 py-5">
-                       <ChevronDown className={`h-4 w-4 text-gray-300 transition-transform duration-500 ${expandedId === item.id ? 'rotate-180 text-indigo-600' : ''}`} />
+                      <ChevronDown className={`h-4 w-4 text-gray-300 transition-transform duration-500 ${expandedId === item.id ? 'rotate-180 text-indigo-600' : ''}`} />
                     </td>
                     <td className="px-6 py-5">
                       <div className="font-black text-gray-900 group-hover:text-indigo-600 transition-colors">{item.numero_commande}</div>
@@ -484,10 +593,10 @@ const filteredRows = useMemo(() => {
                   {expandedId === item.id && (
                     <tr>
                       <td colSpan={6} className="p-0 border-none bg-white">
-                         <OrderTimelineDetail 
-                            item={item} 
-                            emballageLabel={emballagesMap.get(String(item.emballage_id))} 
-                          />
+                        <OrderTimelineDetail
+                          item={item}
+                          emballageLabel={emballagesMap.get(String(item.emballage_id))}
+                        />
                       </td>
                     </tr>
                   )}
@@ -518,6 +627,18 @@ const filteredRows = useMemo(() => {
                     <AlertCircle className="h-5 w-5 shrink-0" /> {errorMessage}
                   </div>
                 )}
+                {ocrRawText && !editing && (
+                  <div className="rounded-[2rem] border border-indigo-100 bg-indigo-50/40 p-4">
+                    <div className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500">
+                      Texte OCR détecté
+                    </div>
+                    <textarea
+                      readOnly
+                      value={ocrRawText}
+                      className="h-28 w-full rounded-2xl border border-indigo-100 bg-white p-3 text-xs outline-none"
+                    />
+                  </div>
+                )}
 
                 <div className="space-y-3">
                   <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 ml-1">📦 Type d'emballage</label>
@@ -536,18 +657,41 @@ const filteredRows = useMemo(() => {
                 </div>
 
                 {activeContract && contractStats && (
-                  <div className="rounded-[2.5rem] border-2 border-indigo-50 bg-indigo-50/30 p-8 space-y-4 shadow-inner">
+                  <div className={`rounded-[2.5rem] border-2 p-8 space-y-4 shadow-inner transition-all duration-500 ${contractStats.depasse ? "border-red-100 bg-red-50/50" : "border-indigo-50 bg-indigo-50/30"
+                    }`}>
                     <div className="flex justify-between items-end">
-                      <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Capacité du contrat</span>
-                      <span className={`text-2xl font-black ${contractStats.depasse ? "text-red-600" : "text-indigo-900"}`}>{contractStats.pourcentage.toFixed(0)}%</span>
+                      <span className={`text-[10px] font-black uppercase tracking-widest ${contractStats.depasse ? "text-red-600" : "text-indigo-600"
+                        }`}>
+                        Capacité du contrat
+                      </span>
+                      <span className={`text-2xl font-black ${contractStats.depasse ? "text-red-600" : "text-indigo-900"}`}>
+                        {(((contractStats.realise + Number(form.quantite)) / contractStats.total) * 100).toFixed(0)}%
+                      </span>
                     </div>
+
+                    {/* Barre de progression */}
                     <div className="h-3 w-full overflow-hidden rounded-full bg-white border border-indigo-100/50">
-                      <div className={`h-full transition-all duration-1000 ${contractStats.depasse ? "bg-red-500" : "bg-indigo-600"}`} style={{ width: `${contractStats.pourcentage}%` }} />
+                      <div
+                        className={`h-full transition-all duration-1000 ${contractStats.depasse ? "bg-red-500" : "bg-indigo-600"}`}
+                        style={{ width: `${Math.min(((contractStats.realise + Number(form.quantite)) / contractStats.total) * 100), 100}%` }}
+                      />
                     </div>
-                    <div className="flex justify-between text-[9px] font-black text-gray-400 uppercase">
-                        <span>Reste: {contractStats.restant}</span>
-                        <span>Total: {contractStats.total}</span>
-                    </div>
+
+                    {/* Message d'explication en cas de dépassement */}
+                    {contractStats.depasse ? (
+                      <div className="flex items-start gap-3 mt-4 animate-in fade-in slide-in-from-top-2">
+                        <AlertCircle className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />
+                        <p className="text-[11px] font-bold text-red-700 leading-relaxed uppercase tracking-tight">
+                          Attention : Vous dépassez la limite du contrat de <span className="underline">{contractStats.surplus}</span> unités.
+                          Veuillez réduire la quantité ou modifier le contrat fournisseur.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="flex justify-between text-[9px] font-black text-gray-400 uppercase">
+                        <span>Reste disponible: {contractStats.restant}</span>
+                        <span>Plafond: {contractStats.total}</span>
+                      </div>
+                    )}
                   </div>
                 )}
 

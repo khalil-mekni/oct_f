@@ -8,17 +8,25 @@ interface Props {
 
 export default function MouvementsFilter({ search, setSearch, total }: Props) {
   return (
-    <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-      <div className="relative w-full sm:w-96">
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Rechercher un code, lot, entrepôt..."
-          className="w-full pl-4 pr-10 py-3 rounded-xl border border-gray-200 bg-white focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 outline-none transition-all dark:bg-gray-900 dark:border-gray-800"
-        />
-      </div>
-      <div className="px-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-xs font-bold uppercase tracking-widest text-gray-500">
-        Total: {total}
+    <div className="space-y-4">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
+        <div className="relative flex-1 group">
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Rechercher un code, lot, entrepôt..."
+            className="w-full rounded-[22px] border-2 border-transparent bg-white px-6 py-4 shadow-sm outline-none transition-all focus:border-[#00A09D]/20 focus:ring-4 focus:ring-[#00A09D]/5 dark:bg-gray-900 dark:text-white"
+          />
+        </div>
+
+        <div className="rounded-[22px] border border-gray-100 bg-white px-6 py-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+          <span className="block text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+            Total
+          </span>
+          <span className="mt-1 block text-lg font-[1000] tracking-tighter text-[#1C2434] dark:text-white">
+            {total}
+          </span>
+        </div>
       </div>
     </div>
   );

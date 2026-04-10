@@ -6,15 +6,12 @@ import { normalizeContrat, TableContrat } from "@/types/contrat";
 
 export default async function ContratsPage() {
   const res = await listContrats();
-  const rows = res.contrats.map(normalizeContrat);
+  const rows = res.refreshContratStatuts.map(normalizeContrat);
   
   return (
-    <div>
-      <PageBreadcrumb pageTitle="Contrats" />
-      <div className="space-y-6">
-        <ComponentCard title="Contrats List">
+    <div className="p-6">
+      <div className="mt-8">
           <ContratTable data={rows} />
-        </ComponentCard>
       </div>
     </div>
   );

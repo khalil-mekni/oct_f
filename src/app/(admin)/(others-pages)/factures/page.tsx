@@ -1,14 +1,8 @@
-import ComponentCard from "@/components/common/ComponentCard";
-import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import FacturesTable from "@/components/factures/FacturesTable";
 import { listFactures, normalizeFacture } from "@/lib/factures.api";
-import { listEmballages } from "@/lib/emballages.api";
-import { listCommandes } from "@/lib/commandes.api";
-import {
-  CommandeOption,
-  EmballageOption,
-  TableFacture,
-} from "@/types/facture";
+import { listBonLivraisons } from "@/lib/bon-livraisons.api";
+import { BonLivraisonOption } from "@/types/bon-livraison";
+import { TableFacture } from "@/types/facture";
 
 type PageProps = {
   searchParams?: Promise<{
@@ -20,40 +14,46 @@ export default async function FacturesPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const currentPage = Number(params?.page || "1");
 
-  const [facturesResult, emballagesResult, commandesResult] = await Promise.all([
+  const [facturesResult, blResult] = await Promise.all([
     listFactures(currentPage),
-    listEmballages(1, 100),
-    listCommandes(1,100),
+    listBonLivraisons(1),
   ]);
 
   const rows: TableFacture[] = facturesResult.factures.data.map(normalizeFacture);
 
-  const emballages: EmballageOption[] = emballagesResult.emballages.data.map(
+  const bonsLivraisonOptions: BonLivraisonOption[] = blResult.bonLivraisons.data.map(
     (item: any) => ({
       id: item.id,
-      label: `${item.code} - ${item.name}`,
-    })
-  );
-
-  const commandes: CommandeOption[] = commandesResult.commandes.data.map(
-    (item: any) => ({
-      id: item.id,
-      numero_commande: item.numero_commande,
+      numero_bl: item.numero_bl,
+      quantite_recue: Number(item.quantite_recue),
+      date_reception: item.date_reception,
+      numero_commande: item.numero_commande || "N/A",
+      commande: item.commande
+        ? {
+            id: item.commande.id,
+            numero_commande: item.commande.numero_commande,
+            fournisseur_id: item.commande.fournisseur_id,
+            date_livraison_prevue: item.commande.date_livraison_prevue,
+            contrat: item.commande.contrat
+              ? {
+                  id: item.commande.contrat.id,
+                  prix_unitaire: item.commande.contrat.prix_unitaire,
+                  taux_penalite_retard: item.commande.contrat.taux_penalite_retard,
+                }
+              : null,
+          }
+        : null,
     })
   );
 
   return (
-    <div>
-      <PageBreadcrumb pageTitle="Factures" />
-      <div className="space-y-6">
-        <ComponentCard title="Factures List">
-          <FacturesTable
-            data={rows}
-            pagination={facturesResult.factures.paginatorInfo}
-            emballages={emballages}
-            commandes={commandes}
-          />
-        </ComponentCard>
+    <div className="p-6">
+      <div className="mt-8">
+        <FacturesTable
+          data={rows}
+          pagination={facturesResult.factures.paginatorInfo}
+          bonsLivraison={bonsLivraisonOptions}
+        />
       </div>
     </div>
   );

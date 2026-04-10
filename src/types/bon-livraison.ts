@@ -22,7 +22,25 @@ export type TableBonLivraison = Omit<BonLivraison, "statut"> & {
   id: string | number;
   statut: BonLivraisonStatut;
 };
+export type BonLivraisonOption = {
+  id: string | number;
+  numero_bl: string;
+  quantite_recue: number;
+  date_reception?: string | null;
+  numero_commande?: string;
 
+  commande?: {
+    id: string | number;
+    numero_commande: string;
+    date_livraison_prevue?: string | null;
+    fournisseur_id?: string | number | null;
+    contrat?: {
+      id: string | number;
+      prix_unitaire?: number | null;
+      taux_penalite_retard?: number | null;
+    } | null;
+  } | null;
+};
 export type CreateBonLivraisonInput = {
   date_reception: string;
   emballage_id: string | number;
@@ -58,7 +76,7 @@ export type CommandeOption = {
   numero_commande: string;
   quantite: number;
   emballage_id?: string | number;
-  entrepot_id?: string | number; 
+  entrepot_id?: string | number;
 };
 
 export type EntrepotOption = {

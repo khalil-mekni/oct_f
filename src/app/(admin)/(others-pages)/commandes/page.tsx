@@ -5,9 +5,11 @@ import { listCommandes, normalizeCommande } from "@/lib/commandes.api";
 import { listEmballages } from "@/lib/emballages.api";
 import { fetchEntrepots } from "@/lib/entrepot.api";
 import {
-  listFournisseurs,
-  normalizeFournisseur,
+  listFournisseurs
 } from "@/lib/fournisseurs.api";
+
+import {normalizeFournisseur } from "@/types/fournisseur";
+
 import { listContrats } from "@/lib/contrats.api";
 import {
   ContratForCommande,
@@ -64,7 +66,7 @@ export default async function CommandesPage({ searchParams }: PageProps) {
       };
     });
 
-  const contrats: ContratForCommande[] = contratsResult.contrats.map((item) => ({
+  const contrats: ContratForCommande[] = contratsResult.refreshContratStatuts.map((item) => ({
     id: item.id,
     numero_contrat: item.numero_contrat,
     fournisseur_id: item.fournisseur_id,
