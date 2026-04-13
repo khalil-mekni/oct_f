@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   listContrats,
   createContrat,
@@ -8,18 +9,16 @@ import {
   deleteContrat,
 } from "@/lib/contrats.api";
 import { TableContrat, normalizeContrat } from "@/types/contrat";
-import { 
-  listFournisseurs, 
-  TableFournisseur, 
-  normalizeFournisseur 
+import {
+  listFournisseurs,
+  TableFournisseur,
+  normalizeFournisseur,
 } from "@/lib/fournisseurs.api";
-import { 
-  listEmballages, 
-} from "@/lib/emballages.api";
-import {TableEmballages ,  Emballages as APIEmballages,  normalizeEmballages 
-
-  } from "@/types/emballage";
-// Importation de nos sous-composants séparés
+import { listEmballages } from "@/lib/emballages.api";
+import {
+  TableEmballages,
+  normalizeEmballages,
+} from "@/types/emballage";
 import { ContratHeader } from "./ContratHeader";
 import { ContratListView } from "./ContratListView";
 import { ContratForm } from "./ContratForm";
@@ -30,13 +29,17 @@ type Status = "ACTIF" | "EXPIRE" | "SUSPENDU";
 const ITEMS_PER_PAGE = 10;
 
 export default function ContratTable({ data }: { data?: TableContrat[] }) {
-  const [rows, setRows] = useState<TableContrat[]>(data ? data.map(normalizeContrat) : []);
+  const searchParams = useSearchParams();
+  const highlightedId = searchParams.get("highlight");
+
+  const [rows, setRows] = useState<TableContrat[]>(
+    data ? data.map(normalizeContrat) : []
+  );
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [editing, setEditing] = useState<TableContrat | null>(null);
   const [query, setQuery] = useState("");
-  
-  // Pagination state
+
   const [currentPage, setCurrentPage] = useState(1);
 
   const [fournisseurs, setFournisseurs] = useState<TableFournisseur[]>([]);
@@ -64,6 +67,7 @@ export default function ContratTable({ data }: { data?: TableContrat[] }) {
           const resContrats = await listContrats();
           setRows(resContrats.contrats.map(normalizeContrat));
         }
+
         const resFourn = await listFournisseurs();
         setFournisseurs(resFourn.fournisseurs.map(normalizeFournisseur));
 
@@ -75,6 +79,7 @@ export default function ContratTable({ data }: { data?: TableContrat[] }) {
         setLoading(false);
       }
     };
+
     fetchAllData();
   }, [data]);
 
@@ -104,18 +109,27 @@ export default function ContratTable({ data }: { data?: TableContrat[] }) {
         const res = await createContrat(input);
         finalContrat = normalizeContrat(res.createContrat);
       }
+
       const updatedWithRefs: TableContrat = {
         ...finalContrat,
-        fournisseur: fournisseurs.find(f => String(f.id) === String(input.fournisseur_id)),
-        emballage: emballages.find(e => String(e.id) === String(input.emballage_id))
+        fournisseur: fournisseurs.find(
+          (f) => String(f.id) === String(input.fournisseur_id)
+        ),
+        emballage: emballages.find(
+          (e) => String(e.id) === String(input.emballage_id)
+        ),
       };
 
       if (editing) {
-        setRows((r) => r.map((x) => (String(x.id) === String(updatedWithRefs.id) ? updatedWithRefs : x)));
+        setRows((r) =>
+          r.map((x) =>
+            String(x.id) === String(updatedWithRefs.id) ? updatedWithRefs : x
+          )
+        );
       } else {
         setRows((r) => [updatedWithRefs, ...r]);
       }
-      
+
       setIsOpen(false);
       setEditing(null);
       setForm(emptyForm);
@@ -128,32 +142,61 @@ export default function ContratTable({ data }: { data?: TableContrat[] }) {
 
   async function handleDelete(id: string | number) {
     if (!confirm("Supprimer ce contrat ?")) return;
+
     try {
       await deleteContrat(id);
-      setRows((r) => r.filter((x) => x.id !== id));
+      setRows((r) => r.filter((x) => String(x.id) !== String(id)));
     } catch {
       alert("Erreur suppression");
     }
   }
 
   const filteredRows = useMemo(() => {
-    return rows.filter((c) => 
-      c.numero_contrat.toLowerCase().includes(query.toLowerCase()) ||
-      c.fournisseur?.raison_sociale?.toLowerCase().includes(query.toLowerCase())
+    return rows.filter(
+      (c) =>
+        c.numero_contrat.toLowerCase().includes(query.toLowerCase()) ||
+        c.fournisseur?.raison_sociale
+          ?.toLowerCase()
+          .includes(query.toLowerCase())
     );
   }, [rows, query]);
 
-  // Pagination calculations
   const totalPages = Math.ceil(filteredRows.length / ITEMS_PER_PAGE);
+
   const paginatedRows = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
     return filteredRows.slice(start, start + ITEMS_PER_PAGE);
   }, [filteredRows, currentPage]);
 
-  // Reset to page 1 when search query changes
   useEffect(() => {
     setCurrentPage(1);
   }, [query]);
+
+  useEffect(() => {
+    if (!highlightedId) return;
+
+    const indexInFiltered = filteredRows.findIndex(
+      (row) => String(row.id) === String(highlightedId)
+    );
+
+    if (indexInFiltered === -1) return;
+
+    const page = Math.floor(indexInFiltered / ITEMS_PER_PAGE) + 1;
+    setCurrentPage(page);
+  }, [highlightedId, filteredRows]);
+
+  useEffect(() => {
+    if (!highlightedId) return;
+
+    const timer = setTimeout(() => {
+      const el = document.getElementById(`contrat-row-${highlightedId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [highlightedId, currentPage, paginatedRows]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -161,33 +204,29 @@ export default function ContratTable({ data }: { data?: TableContrat[] }) {
 
   return (
     <div className="flex flex-col">
-     
-
-      {/* Barre d'outils */}
-      <ContratHeader 
-        query={query} 
-        setQuery={setQuery} 
-        onOpenNew={() => { 
-          setEditing(null); 
-          setForm(emptyForm); 
-          setIsOpen(true); 
-        }} 
+      <ContratHeader
+        query={query}
+        setQuery={setQuery}
+        onOpenNew={() => {
+          setEditing(null);
+          setForm(emptyForm);
+          setIsOpen(true);
+        }}
       />
 
-      {/* Zone scrollable pour la liste */}
       <div className="overflow-auto">
-        <ContratListView 
-          rows={paginatedRows} 
-          onEdit={(c) => { 
-            setEditing(c); 
-            setForm(c); 
-            setIsOpen(true); 
-          }} 
-          onDelete={handleDelete} 
+        <ContratListView
+          rows={paginatedRows}
+          onEdit={(c) => {
+            setEditing(c);
+            setForm(c);
+            setIsOpen(true);
+          }}
+          onDelete={handleDelete}
+          highlightedId={highlightedId}
         />
       </div>
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-center py-4">
           <Pagination
@@ -198,15 +237,14 @@ export default function ContratTable({ data }: { data?: TableContrat[] }) {
         </div>
       )}
 
-      {/* Formulaire Modal */}
-      <ContratForm 
-        isOpen={isOpen} 
-        editing={!!editing} 
-        form={form} 
-        setForm={setForm} 
-        onClose={() => setIsOpen(false)} 
-        onSubmit={handleSubmit} 
-        loading={loading} 
+      <ContratForm
+        isOpen={isOpen}
+        editing={!!editing}
+        form={form}
+        setForm={setForm}
+        onClose={() => setIsOpen(false)}
+        onSubmit={handleSubmit}
+        loading={loading}
         fournisseurs={fournisseurs}
         emballages={emballages}
       />

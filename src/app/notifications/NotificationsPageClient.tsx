@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import { useMercureAlerts } from "@/hooks/useMercureAlerts";
 import {
   archiveAlert,
   getAlerts,
@@ -9,8 +10,14 @@ import {
   type Alert,
   type AlertSeverity,
 } from "@/lib/notifications.api";
+import {
+  archiveAlertInCache,
+  markAlertAsReadInCache,
+  markAllAlertsAsReadInCache,
+} from "@/lib/alerts-cache";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 function getSeverityConfig(severity: AlertSeverity) {
   switch (severity) {
@@ -50,6 +57,18 @@ function getAlertTypeLabel(type: string) {
       return "Anomalie inventaire";
     case "SUPPLIER_DELAY":
       return "Retard fournisseur";
+    case "DELIVERY_IMMINENT":
+      return "Livraison imminente";
+    case "CONTRAT_EXPIRING":
+      return "Contrat proche expiration";
+    case "CONTRACT_EXPIRED":
+      return "Contrat expiré";
+    case "CONTRACT_CONSUMPTION_HIGH":
+      return "Consommation contrat élevée";
+    case "CONTRACT_QUANTITY_EXCEEDED":
+      return "Quantité contrat dépassée";
+    case "ORDER_NOT_RECEIVED_ON_TIME":
+      return "Commande non réceptionnée à temps";
     default:
       return type;
   }
@@ -78,6 +97,8 @@ function formatRelativeTime(dateString?: string | null) {
 
 export default function NotificationsPageClient() {
   const queryClient = useQueryClient();
+  const router = useRouter();
+  useMercureAlerts();
 
   const [typeFilter, setTypeFilter] = useState("all");
   const [severityFilter, setSeverityFilter] = useState("all");
@@ -91,30 +112,48 @@ export default function NotificationsPageClient() {
 
   const markAsReadMutation = useMutation({
     mutationFn: (id: string) => markAlertAsRead(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["alerts"] });
-      queryClient.invalidateQueries({ queryKey: ["alerts-unread-count"] });
+    onSuccess: (_data, id) => {
+      markAlertAsReadInCache(queryClient, id);
     },
   });
 
   const markAllAsReadMutation = useMutation({
     mutationFn: () => markAllAlertsAsRead(),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["alerts"] });
-      queryClient.invalidateQueries({ queryKey: ["alerts-unread-count"] });
+      markAllAlertsAsReadInCache(queryClient);
     },
   });
 
   const archiveAlertMutation = useMutation({
     mutationFn: (id: string) => archiveAlert(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["alerts"] });
-      queryClient.invalidateQueries({ queryKey: ["alerts-unread-count"] });
+    onSuccess: (_data, id) => {
+      archiveAlertInCache(queryClient, id);
     },
   });
 
+  async function handleOpenAlert(alert: Alert) {
+    try {
+      if (alert.status === "unread") {
+        await markAlertAsRead(alert.id);
+        markAlertAsReadInCache(queryClient, alert.id);
+      }
+
+      if (alert.action_url) {
+        router.push(alert.action_url);
+      }
+    } catch {
+      if (alert.action_url) {
+        router.push(alert.action_url);
+      }
+    }
+  }
+
   const filteredAlerts = useMemo(() => {
-    return [...alerts]
+    const uniqueAlerts = Array.from(
+      new Map(alerts.map((alert) => [String(alert.id), alert])).values()
+    );
+
+    return uniqueAlerts
       .filter((alert) => {
         const matchType = typeFilter === "all" || alert.type === typeFilter;
         const matchSeverity =
@@ -227,6 +266,18 @@ export default function NotificationsPageClient() {
             <option value="WAREHOUSE_CAPACITY_HIGH">Entrepôt saturé</option>
             <option value="INVENTORY_ANOMALY">Anomalie inventaire</option>
             <option value="SUPPLIER_DELAY">Retard fournisseur</option>
+            <option value="DELIVERY_IMMINENT">Livraison imminente</option>
+            <option value="CONTRAT_EXPIRING">Contrat proche expiration</option>
+            <option value="CONTRACT_EXPIRED">Contrat expiré</option>
+            <option value="CONTRACT_CONSUMPTION_HIGH">
+              Consommation contrat élevée
+            </option>
+            <option value="CONTRACT_QUANTITY_EXCEEDED">
+              Quantité contrat dépassée
+            </option>
+            <option value="ORDER_NOT_RECEIVED_ON_TIME">
+              Commande non réceptionnée à temps
+            </option>
           </select>
 
           <select
@@ -278,7 +329,9 @@ export default function NotificationsPageClient() {
                         <h3 className="text-base font-semibold text-gray-900 dark:text-white">
                           {alert.title}
                         </h3>
-                        <span className={`rounded-full px-2.5 py-1 text-xs ${severity.badge}`}>
+                        <span
+                          className={`rounded-full px-2.5 py-1 text-xs ${severity.badge}`}
+                        >
                           {severity.label}
                         </span>
                       </div>
@@ -302,12 +355,12 @@ export default function NotificationsPageClient() {
 
                     <div className="flex flex-wrap gap-2">
                       {alert.action_url && (
-                        <Link
-                          href={alert.action_url}
+                        <button
+                          onClick={() => handleOpenAlert(alert)}
                           className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
                         >
                           Ouvrir
-                        </Link>
+                        </button>
                       )}
 
                       {alert.status === "unread" && (

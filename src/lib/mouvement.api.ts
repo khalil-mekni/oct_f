@@ -227,3 +227,17 @@ export async function fetchLotDisponibleDansEntrepot(params: {
 
   return res.lotDisponibleDansEntrepot;
 }
+
+export async function deleteMouvementDraft(id: string | number) {
+  const mutation = `
+    mutation ($id: ID!) {
+      deleteMouvementDraft(id: $id)
+    }
+  `;
+
+  const res = await graphqlRequest<{ deleteMouvementDraft: boolean }>(mutation, {
+    id: String(id),
+  });
+
+  return res.deleteMouvementDraft;
+}

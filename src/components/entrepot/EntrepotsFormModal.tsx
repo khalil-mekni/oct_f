@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Building2, MapPin, Layers3, Activity, X } from "lucide-react";
+import { Building2, MapPin, Layers3, Activity, X, CheckCircle } from "lucide-react";
 import { Entrepot } from "@/lib/entrepot.api";
 
 interface EntrepotsFormModalProps {
@@ -35,25 +35,29 @@ export default function EntrepotsFormModal({
   );
 
   return (
-    <div className="fixed inset-0 z-[999] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
-        <div className="border-b border-slate-200 bg-white px-6 py-5">
-          <div className="flex items-start justify-between gap-4">
+    <div className="fixed inset-0 z-[999] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl animate-in zoom-in-95 duration-200">
+        {/* Header avec gradient */}
+        <div className="relative overflow-hidden bg-gradient-to-r from-[#00A09D] to-[#008784] px-6 py-5">
+          <div className="absolute right-0 top-0 -mr-10 -mt-10 h-32 w-32 rounded-full bg-white/10" />
+          <div className="absolute bottom-0 left-0 -mb-10 -ml-10 h-32 w-32 rounded-full bg-white/10" />
+          
+          <div className="relative flex items-start justify-between gap-4">
             <div>
-              <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.16em] text-[#00A09D]">
+              <div className="mb-1 inline-flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-white">
                 Smart Packaging Logistics
               </div>
-              <h2 className="text-xl font-black tracking-tight text-slate-900">
+              <h2 className="mt-2 text-2xl font-black tracking-tight text-white">
                 {editing ? "Modifier l'entrepôt" : "Nouvel entrepôt"}
               </h2>
-              <p className="mt-1 text-sm text-slate-500">
-                Renseignez les informations principales de l’entrepôt.
+              <p className="mt-1 text-sm text-white/80">
+                Renseignez les informations principales de l'entrepôt.
               </p>
             </div>
 
             <button
               onClick={onClose}
-              className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+              className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white transition hover:bg-white/20 hover:scale-105"
               aria-label="Fermer"
             >
               <X size={18} />
@@ -61,8 +65,8 @@ export default function EntrepotsFormModal({
           </div>
         </div>
 
-        <div className="bg-[#F8FAFC] p-6">
-          <div className="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="bg-gradient-to-b from-[#F8FAFC] to-white p-6">
+          <div className="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-lg">
             <div className="grid grid-cols-1 gap-5">
               <Input
                 label="Nom de l'entrepôt"
@@ -113,7 +117,8 @@ export default function EntrepotsFormModal({
 
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
               <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-slate-500">
+                  <Activity size={12} />
                   Statut
                 </label>
 
@@ -123,14 +128,14 @@ export default function EntrepotsFormModal({
                   </div>
 
                   <select
-                    className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-4 text-sm text-slate-700 outline-none transition focus:border-[#00A09D] focus:ring-4 focus:ring-[#00A09D]/10"
+                    className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-4 text-sm text-slate-700 outline-none transition-all focus:border-[#00A09D] focus:ring-4 focus:ring-[#00A09D]/20 cursor-pointer"
                     value={form.statut ?? "ACTIVE"}
                     onChange={(e) =>
                       setForm({ ...form, statut: e.target.value })
                     }
                   >
-                    <option value="ACTIVE">ACTIVE</option>
-                    <option value="INACTIVE">INACTIVE</option>
+                    <option value="ACTIVE">✅ ACTIVE</option>
+                    <option value="INACTIVE">⭕ INACTIVE</option>
                   </select>
                 </div>
               </div>
@@ -138,11 +143,11 @@ export default function EntrepotsFormModal({
           </div>
         </div>
 
-        <div className="flex flex-col-reverse gap-3 border-t border-slate-200 bg-slate-50 px-6 py-4 sm:flex-row sm:items-center sm:justify-end">
+        <div className="flex flex-col-reverse gap-3 border-t border-slate-200 bg-gradient-to-r from-slate-50 to-white px-6 py-4 sm:flex-row sm:items-center sm:justify-end">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100"
+            className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-600 transition-all hover:bg-slate-50 hover:border-slate-300"
           >
             Annuler
           </button>
@@ -150,8 +155,9 @@ export default function EntrepotsFormModal({
           <button
             type="button"
             onClick={() => onSave(form)}
-            className="rounded-xl bg-[#00A09D] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#008784]"
+            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#00A09D] to-[#008784] px-6 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg hover:scale-105"
           >
+            <CheckCircle size={16} />
             Sauvegarder
           </button>
         </div>
@@ -169,13 +175,14 @@ const Input = ({
   icon,
 }: InputProps) => (
   <div className="flex flex-col gap-2">
-    <label className="text-xs font-bold uppercase tracking-wide text-slate-500">
+    <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-slate-500">
+      {icon && <span className="text-[#00A09D]">{icon}</span>}
       {label}
     </label>
 
-    <div className="relative">
+    <div className="relative group">
       {icon && (
-        <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+        <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-[#00A09D]">
           {icon}
         </div>
       )}
@@ -185,9 +192,9 @@ const Input = ({
         value={value ?? ""}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className={`w-full rounded-xl border border-slate-200 bg-white py-3 pr-4 text-sm text-slate-700 outline-none transition focus:border-[#00A09D] focus:ring-4 focus:ring-[#00A09D]/10 ${
+        className={`w-full rounded-xl border border-slate-200 bg-white py-3 text-sm text-slate-700 outline-none transition-all focus:border-[#00A09D] focus:ring-4 focus:ring-[#00A09D]/20 placeholder:text-slate-400 ${
           icon ? "pl-10" : "pl-4"
-        }`}
+        } pr-4`}
       />
     </div>
   </div>

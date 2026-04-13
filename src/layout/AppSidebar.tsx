@@ -32,7 +32,7 @@ const navItems: NavItem[] = [
   {
     icon: <GridIcon />,
     name: "Dashboard",
-    subItems: [{ name: "Ecommerce", path: "/", pro: false }],
+    subItems: [{ name: "dashboard", path: "/", pro: false }],
   },
   {
     icon: <BoxCubeIcon />,
@@ -68,6 +68,12 @@ const navItems: NavItem[] = [
     subItems: [
       { name: "Stock Inventaire", path: "/stock-inventaire", pro: false },
     ],
+  },
+
+  {
+    icon: <BoxCubeIcon />,
+    name: "ResponsableStock",
+    path: "/responsableStock",
   },
 
 {

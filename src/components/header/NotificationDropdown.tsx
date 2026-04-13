@@ -2,13 +2,20 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { useAlerts } from "@/hooks/useAlerts";
 import { useUnreadAlertsCount } from "@/hooks/useUnreadAlertsCount";
 import { useMarkAlertAsRead } from "@/hooks/useMarkAlertAsRead";
 import type { Alert, AlertSeverity } from "@/lib/notifications.api";
+import { markAlertAsReadInCache, upsertAlertInCache } from "@/lib/alerts-cache";
+
+type MercurePayload = {
+  event?: string;
+  alert?: Alert;
+};
 
 function getSeverityConfig(severity: AlertSeverity) {
   switch (severity) {
@@ -52,6 +59,18 @@ function getAlertTypeLabel(type: string) {
       return "Anomalie inventaire";
     case "SUPPLIER_DELAY":
       return "Retard fournisseur";
+    case "DELIVERY_IMMINENT":
+      return "Livraison imminente";
+    case "CONTRAT_EXPIRING":
+      return "Contrat proche expiration";
+    case "CONTRACT_EXPIRED":
+      return "Contrat expiré";
+    case "CONTRACT_CONSUMPTION_HIGH":
+      return "Consommation contrat élevée";
+    case "CONTRACT_QUANTITY_EXCEEDED":
+      return "Quantité contrat dépassée";
+    case "ORDER_NOT_RECEIVED_ON_TIME":
+      return "Commande non réceptionnée à temps";
     default:
       return type;
   }
@@ -76,6 +95,14 @@ function formatRelativeTime(dateString?: string | null) {
   if (diffInDays < 7) return `Il y a ${diffInDays} j`;
 
   return new Date(dateString).toLocaleDateString("fr-FR");
+}
+
+function alertDateValue(alert: Alert) {
+  return alert.updated_at
+    ? new Date(alert.updated_at).getTime()
+    : alert.created_at
+    ? new Date(alert.created_at).getTime()
+    : 0;
 }
 
 function AlertIcon({ severity }: { severity: AlertSeverity }) {
@@ -116,25 +143,113 @@ function AlertIcon({ severity }: { severity: AlertSeverity }) {
 
 export default function NotificationDropdown() {
   const router = useRouter();
+  const queryClient = useQueryClient();
+
   const [isOpen, setIsOpen] = useState(false);
+  const [sessionNewAlertIds, setSessionNewAlertIds] = useState<Set<string>>(
+    new Set()
+  );
+  const [hasNewAlertEffect, setHasNewAlertEffect] = useState(false);
+  const [hasWarehouseCriticalEffect, setHasWarehouseCriticalEffect] =
+    useState(false);
+  const [hasOpenedDropdown, setHasOpenedDropdown] = useState(false);
+
+  const initializedUnreadIdsRef = useRef<Set<string>>(new Set());
 
   const { data: alerts = [], isLoading } = useAlerts();
   const { data: unreadCount = 0 } = useUnreadAlertsCount();
   const { mutateAsync: markAsRead } = useMarkAlertAsRead();
 
+  useEffect(() => {
+    if (initializedUnreadIdsRef.current.size > 0) return;
+
+    const unreadIds = alerts
+      .filter((alert) => alert.status === "unread")
+      .map((alert) => String(alert.id));
+
+    initializedUnreadIdsRef.current = new Set(unreadIds);
+  }, [alerts]);
+
+  useEffect(() => {
+    const url = new URL("http://localhost:3001/.well-known/mercure");
+    url.searchParams.append("topic", "alerts/general");
+
+    const eventSource = new EventSource(url.toString());
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data: MercurePayload = JSON.parse(event.data);
+
+        if (!data.alert) return;
+
+        const alert = data.alert;
+        const alertId = String(alert.id);
+
+        upsertAlertInCache(queryClient, alert);
+
+        const wasAlreadyPresentAtLoad =
+          initializedUnreadIdsRef.current.has(alertId);
+
+        if (alert.status === "unread" && !wasAlreadyPresentAtLoad) {
+          setSessionNewAlertIds((prev) => {
+            const next = new Set(prev);
+            next.add(alertId);
+            return next;
+          });
+
+          setHasNewAlertEffect(true);
+
+          setTimeout(() => {
+            setHasNewAlertEffect(false);
+          }, 3000);
+        }
+
+        if (
+          alert.type === "WAREHOUSE_CAPACITY_HIGH" &&
+          (alert.severity === "critical" || alert.severity === "warning")
+        ) {
+          setHasWarehouseCriticalEffect(true);
+          setIsOpen(true);
+
+          setTimeout(() => {
+            setHasWarehouseCriticalEffect(false);
+          }, 4000);
+        }
+      } catch (error) {
+        console.error("Erreur parsing Mercure header:", error);
+      }
+    };
+
+    eventSource.onerror = () => {
+  console.warn("Mercure indisponible pour le moment.");
+};
+
+    return () => {
+      eventSource.close();
+    };
+  }, [queryClient]);
+
   const recentAlerts = useMemo(() => {
-    return [...alerts]
+    const uniqueAlerts = Array.from(
+      new Map(alerts.map((alert) => [String(alert.id), alert])).values()
+    );
+
+    return uniqueAlerts
       .filter((alert) => alert.status !== "archived")
-      .sort((a, b) => {
-        const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
-        const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
-        return dateB - dateA;
-      })
+      .sort((a, b) => alertDateValue(b) - alertDateValue(a))
       .slice(0, 6);
   }, [alerts]);
 
   const toggleDropdown = () => {
-    setIsOpen((prev) => !prev);
+    const newIsOpen = !isOpen;
+    setIsOpen(newIsOpen);
+
+    if (newIsOpen) {
+      setHasOpenedDropdown(true);
+      setSessionNewAlertIds(new Set());
+      setHasNewAlertEffect(false);
+      setHasWarehouseCriticalEffect(false);
+    }
   };
 
   const closeDropdown = () => {
@@ -145,6 +260,7 @@ export default function NotificationDropdown() {
     try {
       if (alert.status === "unread") {
         await markAsRead(alert.id);
+        markAlertAsReadInCache(queryClient, alert.id);
       }
 
       closeDropdown();
@@ -159,21 +275,55 @@ export default function NotificationDropdown() {
     }
   };
 
+  const displayCount = hasOpenedDropdown
+    ? sessionNewAlertIds.size
+    : unreadCount;
+
+  const buttonClass = hasWarehouseCriticalEffect
+    ? "border-red-500 bg-red-50 text-red-600 shadow-[0_0_0_8px_rgba(239,68,68,0.18)] animate-bounce dark:bg-red-500/10 dark:text-red-400"
+    : hasNewAlertEffect
+    ? "scale-110 border-orange-400 bg-white text-orange-600 shadow-[0_0_0_6px_rgba(251,146,60,0.18)] dark:bg-gray-900 dark:text-orange-400"
+    : "border-gray-200 bg-white text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white";
+
+  const badgeClass = hasWarehouseCriticalEffect
+    ? "bg-red-600"
+    : "bg-orange-500";
+
+  const badgePingClass = hasWarehouseCriticalEffect
+    ? "bg-red-400"
+    : "bg-orange-400";
+
   return (
     <div className="relative">
       <button
-        className="relative dropdown-toggle flex h-11 w-11 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+        className={`relative dropdown-toggle flex h-11 w-11 items-center justify-center rounded-full border transition-all duration-300 ${buttonClass}`}
         onClick={toggleDropdown}
       >
-        {unreadCount > 0 && (
-          <span className="absolute right-0 top-0.5 z-10 flex min-h-[18px] min-w-[18px] items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-semibold text-white">
-            {unreadCount > 99 ? "99+" : unreadCount}
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-orange-400 opacity-75"></span>
+        {displayCount > 0 && (
+          <span
+            className={`absolute right-0 top-0.5 z-10 flex min-h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-semibold text-white ${badgeClass}`}
+          >
+            {displayCount > 99 ? "99+" : displayCount}
+            <span
+              className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 ${badgePingClass}`}
+            ></span>
           </span>
         )}
 
+        {hasWarehouseCriticalEffect && (
+          <span className="absolute inset-0 rounded-full border-2 border-red-400 animate-ping"></span>
+        )}
+
+        {hasNewAlertEffect && !hasWarehouseCriticalEffect && (
+          <span className="absolute inset-0 rounded-full border-2 border-orange-300 animate-ping"></span>
+        )}
+
         <svg
-          className="fill-current"
+          className={`fill-current transition-transform duration-300 ${
+            hasWarehouseCriticalEffect || hasNewAlertEffect
+              ? "animate-pulse"
+              : ""
+          }`}
           width="20"
           height="20"
           viewBox="0 0 20 20"
@@ -208,7 +358,9 @@ export default function NotificationDropdown() {
             className="dropdown-toggle text-gray-500 transition hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
           >
             <svg
-              className="fill-current"
+              className={`fill-current ${
+                hasWarehouseCriticalEffect ? "animate-pulse text-red-500" : ""
+              }`}
               width="24"
               height="24"
               viewBox="0 0 24 24"
@@ -285,7 +437,11 @@ export default function NotificationDropdown() {
 
         <Link
           href="/notifications"
-          onClick={closeDropdown}
+          onClick={() => {
+            setSessionNewAlertIds(new Set());
+            setHasOpenedDropdown(false);
+            closeDropdown();
+          }}
           className="mt-3 block rounded-lg border border-gray-300 bg-white px-4 py-2 text-center text-sm font-medium text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
         >
           Voir toutes les notifications

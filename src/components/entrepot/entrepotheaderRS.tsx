@@ -10,7 +10,7 @@ interface Props {
   onRefresh?: () => void;
 }
 
-export const EntrepotsHeader = ({
+export const EntrepotR = ({
   count,
   query,
   setQuery,
@@ -45,13 +45,7 @@ export const EntrepotsHeader = ({
           </div>
 
           {/* Bouton principal */}
-          <button
-            onClick={onOpenNew}
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#00A09D] to-[#008784] px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg hover:scale-105"
-          >
-            <Plus size={18} />
-            Nouvel entrepôt
-          </button>
+          
         </div>
 
         {/* Barre de recherche et compteur */}
