@@ -2,7 +2,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import type { Alert, AlertStatus } from "@/lib/notifications.api";
 
 function computeUnreadCount(alerts: Alert[]): number {
-  return alerts.filter((a) => a.status === "unread").length;
+  return alerts.filter((a) => a.user_status === "unread").length;
 }
 
 export function upsertAlertInCache(
@@ -11,12 +11,16 @@ export function upsertAlertInCache(
 ): void {
   queryClient.setQueryData<Alert[]>(["alerts"], (old = []) => {
     const next = [...old];
+
     const index = next.findIndex(
       (a) => String(a.id) === String(incoming.id)
     );
 
     if (index >= 0) {
-      next[index] = incoming;
+      next[index] = {
+        ...next[index],
+        ...incoming,
+      };
     } else {
       next.unshift(incoming);
     }
@@ -42,8 +46,8 @@ export function markAlertAsReadInCache(
       String(alert.id) === String(alertId)
         ? {
             ...alert,
-            status: readStatus,
-            read_at: now,
+            user_status: readStatus,
+            user_read_at: now,
             updated_at: now,
           }
         : alert
@@ -70,7 +74,8 @@ export function archiveAlertInCache(
       String(alert.id) === String(alertId)
         ? {
             ...alert,
-            status: archivedStatus,
+            user_status: archivedStatus,
+            user_archived_at: now,
             updated_at: now,
           }
         : alert
@@ -93,11 +98,11 @@ export function markAllAlertsAsReadInCache(
     const readStatus: AlertStatus = "read";
 
     const next: Alert[] = old.map((alert) =>
-      alert.status === "unread"
+      alert.user_status === "unread"
         ? {
             ...alert,
-            status: readStatus,
-            read_at: now,
+            user_status: readStatus,
+            user_read_at: now,
             updated_at: now,
           }
         : alert

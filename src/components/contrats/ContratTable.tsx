@@ -1,37 +1,228 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { ContratHeader } from "./ContratHeader";
+import { ContratListView } from "./ContratListView";
+import { ContratForm } from "./ContratForm";
 import {
-  listContrats,
   createContrat,
   updateContrat,
   deleteContrat,
 } from "@/lib/contrats.api";
-import { TableContrat, normalizeContrat } from "@/types/contrat";
-import {
-  listFournisseurs,
-  TableFournisseur,
-  normalizeFournisseur,
-} from "@/lib/fournisseurs.api";
+import { listFournisseurs } from "@/lib/fournisseurs.api";
 import { listEmballages } from "@/lib/emballages.api";
-import {
-  TableEmballages,
-  normalizeEmballages,
-} from "@/types/emballage";
-import { ContratHeader } from "./ContratHeader";
-import { ContratListView } from "./ContratListView";
-import { ContratForm } from "./ContratForm";
-import Pagination from "@/components/tables/Pagination";
+import { normalizeContrat, TableContrat } from "@/types/contrat";
+import { TableEmballages } from "@/types/emballage";
+import { TableFournisseur } from "@/types/fournisseur";
+import OcrUploadModal from "@/components/common/OcrUploadModal";
+import { OcrContratMappedData } from "@/types/ocr";
 
-type Status = "ACTIF" | "EXPIRE" | "SUSPENDU";
+type NumericInput = number | "";
+type ContratStatus = "ACTIF" | "EXPIRE" | "SUSPENDU";
 
-const ITEMS_PER_PAGE = 10;
+type ContratFormState = {
+  id?: string | number;
+  numero_contrat: string;
+  objet: string;
+  date_signature: string;
+  date_debut: string;
+  date_fin: string;
+  quantite_contractuelle: NumericInput;
+  quantite_realisee: NumericInput;
+  taux_depassement_autorise: NumericInput;
+  montant_ht: NumericInput;
+  montant_tva: NumericInput;
+  taux_cautionnement: NumericInput;
+  taux_penalite_retard: NumericInput;
+  plafond_penalite: NumericInput;
+  prix_unitaire: NumericInput;
+  statut: ContratStatus;
+  fournisseur_id: string;
+  emballage_id: string;
+  fournisseur?: TableFournisseur;
+  emballage?: TableEmballages;
+};
+
+const LocalPagination = ({
+  currentPage,
+  totalPages,
+  onPageChange,
+}: {
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (p: number) => void;
+}) => (
+  <div className="flex items-center gap-4">
+    <button
+      onClick={() => onPageChange(currentPage - 1)}
+      disabled={currentPage === 1}
+      className="px-4 py-2 text-xs font-bold uppercase tracking-widest bg-white border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-30 transition-all shadow-sm"
+    >
+      Précédent
+    </button>
+
+    <div className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-x px-6 border-gray-100">
+      Page {currentPage} sur {totalPages}
+    </div>
+
+    <button
+      onClick={() => onPageChange(currentPage + 1)}
+      disabled={currentPage === totalPages}
+      className="px-4 py-2 text-xs font-bold uppercase tracking-widest bg-white border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-30 transition-all shadow-sm"
+    >
+      Suivant
+    </button>
+  </div>
+);
+
+function normalizeText(value?: string | null) {
+  return (value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+}
+
+function normalizeDateForInput(value?: string | null) {
+  if (!value) return "";
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return value;
+  }
+
+  const fr = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (fr) {
+    return `${fr[3]}-${fr[2]}-${fr[1]}`;
+  }
+
+  return "";
+}
+
+function toNumberOrDefault(value: NumericInput, fallback: number) {
+  return value === "" || value === null || value === undefined
+    ? fallback
+    : Number(value);
+}
+
+function toNumberOrNull(value: NumericInput) {
+  return value === "" || value === null || value === undefined
+    ? null
+    : Number(value);
+}
+
+function mapContratToForm(c: TableContrat): ContratFormState {
+  return {
+    id: c.id,
+    numero_contrat: String(c.numero_contrat ?? ""),
+    objet: String(c.objet ?? ""),
+    date_signature: normalizeDateForInput(
+      c.date_signature ? String(c.date_signature) : ""
+    ),
+    date_debut: normalizeDateForInput(c.date_debut ? String(c.date_debut) : ""),
+    date_fin: normalizeDateForInput(c.date_fin ? String(c.date_fin) : ""),
+    quantite_contractuelle: c.quantite_contractuelle ?? 0,
+    quantite_realisee: c.quantite_realisee ?? 0,
+    taux_depassement_autorise: c.taux_depassement_autorise ?? 0.2,
+    montant_ht: c.montant_ht ?? 0,
+    montant_tva: c.montant_tva ?? 0,
+    taux_cautionnement: c.taux_cautionnement ?? 3,
+    taux_penalite_retard: c.taux_penalite_retard ?? 0.002,
+    plafond_penalite: c.plafond_penalite ?? 5,
+    prix_unitaire: c.prix_unitaire ?? 0,
+    statut: (c.statut ?? "ACTIF") as ContratStatus,
+    fournisseur_id: String(c.fournisseur_id ?? ""),
+    emballage_id: String(c.emballage_id ?? ""),
+    fournisseur: c.fournisseur,
+    emballage: c.emballage,
+  };
+}
+
+function extractFromRawText(rawText: string): Partial<OcrContratMappedData> {
+  const text = rawText || "";
+  const result: Partial<OcrContratMappedData> = {};
+
+  const contratMatch = text.match(
+    /(?:contrat\s*n[°o]?\s*|num[eé]ro contrat\s*:?\s*|r[eé]f[eé]rence\s*:?\s*)([A-Z0-9/_-]+)/i
+  );
+  if (contratMatch?.[1]) {
+    result.numero_contrat = contratMatch[1].trim();
+  }
+
+  const dateSignatureMatch = text.match(/date\s*:?\s*(\d{2}\/\d{2}\/\d{4})/i);
+  if (dateSignatureMatch?.[1]) {
+    result.date_signature = dateSignatureMatch[1];
+  }
+
+  const dateDebutMatch = text.match(
+    /date\s+de\s+d[eé]but\s*:?\s*(\d{2}\/\d{2}\/\d{4})/i
+  );
+  if (dateDebutMatch?.[1]) {
+    result.date_debut = dateDebutMatch[1];
+  }
+
+  const dateFinMatch = text.match(
+    /date\s+de\s+fin\s*:?\s*(\d{2}\/\d{2}\/\d{4})/i
+  );
+  if (dateFinMatch?.[1]) {
+    result.date_fin = dateFinMatch[1];
+  }
+
+  const qteMatch = text.match(
+    /(?:quantit[eé]\s+totale|quantit[eé]\s+contractuelle|quantit[eé])\s*:?\s*([0-9]+(?:[.,][0-9]+)?)/i
+  );
+  if (qteMatch?.[1]) {
+    result.quantite_contractuelle = Number(
+      qteMatch[1].replace(",", ".").trim()
+    );
+  }
+
+  const puMatch = text.match(
+    /prix\s+unitaire\s*:?\s*([0-9]+(?:[.,][0-9]+)?)/i
+  );
+  if (puMatch?.[1]) {
+    result.prix_unitaire = Number(puMatch[1].replace(",", ".").trim());
+  }
+
+  const montantHtMatch = text.match(
+    /(?:montant\s+ht|total\s+ht|ht)\s*:?\s*([0-9\s]+(?:[.,][0-9]+)?)/i
+  );
+  if (montantHtMatch?.[1]) {
+    result.montant_ht = Number(
+      montantHtMatch[1].replace(/\s+/g, "").replace(",", ".")
+    );
+  }
+
+  const montantTvaMatch = text.match(
+    /(?:montant\s+tva|tva)\s*:?\s*([0-9\s]+(?:[.,][0-9]+)?)/i
+  );
+  if (montantTvaMatch?.[1]) {
+    result.montant_tva = Number(
+      montantTvaMatch[1].replace(/\s+/g, "").replace(",", ".")
+    );
+  }
+
+  const fournisseurMatch =
+    text.match(/fournisseur\s*:?\s*([^\n]+)/i) ||
+    text.match(/fournisseur\s*\n([^\n]+)/i);
+  if (fournisseurMatch?.[1]) {
+    result.fournisseur_nom = fournisseurMatch[1].trim();
+  }
+
+  const emballageMatch =
+    text.match(/emballage\s*:?\s*([^\n]+)/i) ||
+    text.match(/emballage\s*&\s*([^\n]+)/i);
+  if (emballageMatch?.[1]) {
+    result.emballage_nom = emballageMatch[1].trim();
+  }
+
+  if (/contrat d[' ]achat/i.test(text)) {
+    result.objet = "Contrat d'achat";
+  }
+
+  return result;
+}
 
 export default function ContratTable({ data }: { data?: TableContrat[] }) {
-  const searchParams = useSearchParams();
-  const highlightedId = searchParams.get("highlight");
-
   const [rows, setRows] = useState<TableContrat[]>(
     data ? data.map(normalizeContrat) : []
   );
@@ -41,201 +232,380 @@ export default function ContratTable({ data }: { data?: TableContrat[] }) {
   const [query, setQuery] = useState("");
 
   const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
 
   const [fournisseurs, setFournisseurs] = useState<TableFournisseur[]>([]);
   const [emballages, setEmballages] = useState<TableEmballages[]>([]);
+  const [isOcrOpen, setIsOcrOpen] = useState(false);
+  const [ocrRawText, setOcrRawText] = useState("");
 
-  const emptyForm: Partial<TableContrat> = {
+  const emptyForm: ContratFormState = {
     numero_contrat: "",
+    objet: "",
+    date_signature: "",
     date_debut: "",
     date_fin: "",
     quantite_contractuelle: 0,
-    taux_depassement_autorise: 0.2,
     quantite_realisee: 0,
-    statut: "ACTIF" as Status,
+    taux_depassement_autorise: 0.2,
+    montant_ht: 0,
+    montant_tva: 0,
+    taux_cautionnement: 3,
+    taux_penalite_retard: 0.002,
+    plafond_penalite: 5,
+    prix_unitaire: 0,
+    statut: "ACTIF",
     fournisseur_id: "",
     emballage_id: "",
   };
 
-  const [form, setForm] = useState<Partial<TableContrat>>(emptyForm);
+  const [form, setForm] = useState<ContratFormState>(emptyForm);
 
   useEffect(() => {
-    const fetchAllData = async () => {
-      setLoading(true);
+    const loadRefs = async () => {
       try {
-        if (!data) {
-          const resContrats = await listContrats();
-          setRows(resContrats.contrats.map(normalizeContrat));
-        }
+        const [resF, resE] = await Promise.all([
+          listFournisseurs(),
+          listEmballages(1, 100),
+        ]);
 
-        const resFourn = await listFournisseurs();
-        setFournisseurs(resFourn.fournisseurs.map(normalizeFournisseur));
-
-        const resEmb = await listEmballages(1, 100);
-        setEmballages(resEmb.emballages.data.map(normalizeEmballages));
-      } catch (error) {
-        console.error("Erreur chargement:", error);
-      } finally {
-        setLoading(false);
+        setFournisseurs(resF.fournisseurs || []);
+        setEmballages(resE.emballages.data || []);
+      } catch (err) {
+        console.error("Erreur de chargement des références", err);
       }
     };
 
-    fetchAllData();
-  }, [data]);
-
-  async function handleSubmit(e?: React.FormEvent) {
-    e?.preventDefault();
-    setLoading(true);
-
-    try {
-      const input = {
-        numero_contrat: form.numero_contrat || "",
-        date_debut: form.date_debut || "",
-        date_fin: form.date_fin || "",
-        quantite_contractuelle: Number(form.quantite_contractuelle) || 0,
-        taux_depassement_autorise: Number(form.taux_depassement_autorise) || 0,
-        quantite_realisee: Number(form.quantite_realisee) || 0,
-        statut: form.statut || "ACTIF",
-        fournisseur_id: form.fournisseur_id || "",
-        emballage_id: form.emballage_id || "",
-      };
-
-      let finalContrat: TableContrat;
-
-      if (editing) {
-        const res = await updateContrat(editing.id, input);
-        finalContrat = normalizeContrat(res.updateContrat);
-      } else {
-        const res = await createContrat(input);
-        finalContrat = normalizeContrat(res.createContrat);
-      }
-
-      const updatedWithRefs: TableContrat = {
-        ...finalContrat,
-        fournisseur: fournisseurs.find(
-          (f) => String(f.id) === String(input.fournisseur_id)
-        ),
-        emballage: emballages.find(
-          (e) => String(e.id) === String(input.emballage_id)
-        ),
-      };
-
-      if (editing) {
-        setRows((r) =>
-          r.map((x) =>
-            String(x.id) === String(updatedWithRefs.id) ? updatedWithRefs : x
-          )
-        );
-      } else {
-        setRows((r) => [updatedWithRefs, ...r]);
-      }
-
-      setIsOpen(false);
-      setEditing(null);
-      setForm(emptyForm);
-    } catch (err) {
-      alert("Erreur lors de l'enregistrement");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleDelete(id: string | number) {
-    if (!confirm("Supprimer ce contrat ?")) return;
-
-    try {
-      await deleteContrat(id);
-      setRows((r) => r.filter((x) => String(x.id) !== String(id)));
-    } catch {
-      alert("Erreur suppression");
-    }
-  }
+    loadRefs();
+  }, []);
 
   const filteredRows = useMemo(() => {
-    return rows.filter(
-      (c) =>
-        c.numero_contrat.toLowerCase().includes(query.toLowerCase()) ||
-        c.fournisseur?.raison_sociale
-          ?.toLowerCase()
-          .includes(query.toLowerCase())
-    );
+    const q = query.toLowerCase();
+
+    return rows.filter((r) => {
+      const numeroContrat = String(r.numero_contrat ?? "").toLowerCase();
+      const raisonSociale = String(
+        r.fournisseur?.raison_sociale ?? ""
+      ).toLowerCase();
+
+      return numeroContrat.includes(q) || raisonSociale.includes(q);
+    });
   }, [rows, query]);
 
-  const totalPages = Math.ceil(filteredRows.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
 
   const paginatedRows = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredRows.slice(start, start + ITEMS_PER_PAGE);
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredRows.slice(start, start + itemsPerPage);
   }, [filteredRows, currentPage]);
 
   useEffect(() => {
     setCurrentPage(1);
   }, [query]);
 
-  useEffect(() => {
-    if (!highlightedId) return;
-
-    const indexInFiltered = filteredRows.findIndex(
-      (row) => String(row.id) === String(highlightedId)
+  const stats = useMemo(() => {
+    const total = rows.length;
+    const totalV = rows.reduce(
+      (acc, c) => acc + (c.quantite_contractuelle || 0),
+      0
+    );
+    const totalR = rows.reduce(
+      (acc, c) => acc + (c.quantite_realisee || 0),
+      0
     );
 
-    if (indexInFiltered === -1) return;
+    return {
+      total,
+      actifs: rows.filter((r) => r.statut === "ACTIF").length,
+      realisation: totalV > 0 ? Math.round((totalR / totalV) * 100) : 0,
+    };
+  }, [rows]);
 
-    const page = Math.floor(indexInFiltered / ITEMS_PER_PAGE) + 1;
-    setCurrentPage(page);
-  }, [highlightedId, filteredRows]);
+  function findFournisseurIdByName(
+    fournisseursList: Array<{ id: string | number; raison_sociale?: string }>,
+    target?: string
+  ) {
+    if (!target) return "";
 
-  useEffect(() => {
-    if (!highlightedId) return;
+    const normalizedTarget = normalizeText(target);
 
-    const timer = setTimeout(() => {
-      const el = document.getElementById(`contrat-row-${highlightedId}`);
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth", block: "center" });
+    const exact = fournisseursList.find(
+      (item) => normalizeText(item.raison_sociale) === normalizedTarget
+    );
+    if (exact) return String(exact.id);
+
+    const includes = fournisseursList.find((item) =>
+      normalizeText(item.raison_sociale).includes(normalizedTarget)
+    );
+    if (includes) return String(includes.id);
+
+    const reverseIncludes = fournisseursList.find((item) =>
+      normalizedTarget.includes(normalizeText(item.raison_sociale))
+    );
+    if (reverseIncludes) return String(reverseIncludes.id);
+
+    return "";
+  }
+
+  function findEmballageIdByName(
+    emballagesList: Array<{ id: string | number; name?: string }>,
+    target?: string
+  ) {
+    if (!target) return "";
+
+    const normalizedTarget = normalizeText(target);
+
+    const exact = emballagesList.find(
+      (item) => normalizeText(item.name) === normalizedTarget
+    );
+    if (exact) return String(exact.id);
+
+    const includes = emballagesList.find((item) =>
+      normalizeText(item.name).includes(normalizedTarget)
+    );
+    if (includes) return String(includes.id);
+
+    const reverseIncludes = emballagesList.find((item) =>
+      normalizedTarget.includes(normalizeText(item.name))
+    );
+    if (reverseIncludes) return String(reverseIncludes.id);
+
+    return "";
+  }
+
+  function applyOcrToContratForm(
+    data: Partial<OcrContratMappedData>,
+    rawText?: string
+  ) {
+    const fallbackData = rawText ? extractFromRawText(rawText) : {};
+    const mergedData: Partial<OcrContratMappedData> = {
+      ...fallbackData,
+      ...data,
+    };
+
+    setEditing(null);
+
+    setForm((prev) => {
+      const updated: ContratFormState = { ...prev };
+
+      if (
+        mergedData.numero_contrat !== undefined &&
+        mergedData.numero_contrat !== null
+      ) {
+        updated.numero_contrat = String(mergedData.numero_contrat);
       }
-    }, 250);
 
-    return () => clearTimeout(timer);
-  }, [highlightedId, currentPage, paginatedRows]);
+      if (mergedData.objet !== undefined && mergedData.objet !== null) {
+        updated.objet = String(mergedData.objet);
+      }
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
+      if (mergedData.date_signature) {
+        updated.date_signature = normalizeDateForInput(
+          mergedData.date_signature
+        );
+      }
+
+      if (mergedData.date_debut) {
+        updated.date_debut = normalizeDateForInput(mergedData.date_debut);
+      }
+
+      if (mergedData.date_fin) {
+        updated.date_fin = normalizeDateForInput(mergedData.date_fin);
+      }
+
+      if (
+        mergedData.quantite_contractuelle !== undefined &&
+        mergedData.quantite_contractuelle !== null
+      ) {
+        updated.quantite_contractuelle = Number(
+          mergedData.quantite_contractuelle
+        );
+      }
+
+      if (mergedData.montant_ht !== undefined && mergedData.montant_ht !== null) {
+        updated.montant_ht = Number(mergedData.montant_ht);
+      }
+
+      if (
+        mergedData.montant_tva !== undefined &&
+        mergedData.montant_tva !== null
+      ) {
+        updated.montant_tva = Number(mergedData.montant_tva);
+      }
+
+      if (
+        mergedData.prix_unitaire !== undefined &&
+        mergedData.prix_unitaire !== null
+      ) {
+        updated.prix_unitaire = Number(mergedData.prix_unitaire);
+      }
+
+      if (mergedData.fournisseur_nom) {
+        const fournisseurId = findFournisseurIdByName(
+          fournisseurs,
+          mergedData.fournisseur_nom
+        );
+        if (fournisseurId) {
+          updated.fournisseur_id = fournisseurId;
+        }
+      }
+
+      if (mergedData.emballage_nom) {
+        const emballageId = findEmballageIdByName(
+          emballages,
+          mergedData.emballage_nom
+        );
+        if (emballageId) {
+          updated.emballage_id = emballageId;
+        }
+      }
+
+      return updated;
+    });
+
+    setIsOpen(true);
+  }
+
+  const handleSubmit = async (
+    e?: React.FormEvent | React.MouseEvent<HTMLButtonElement>
+  ) => {
+    e?.preventDefault();
+    setLoading(true);
+
+    try {
+      const numeroContrat = form.numero_contrat.trim();
+
+      if (!numeroContrat) {
+        alert("Le numéro de contrat est obligatoire.");
+        return;
+      }
+
+      if (!form.fournisseur_id) {
+        alert("Le fournisseur est obligatoire.");
+        return;
+      }
+
+      if (!form.emballage_id) {
+        alert("Le type d'emballage est obligatoire.");
+        return;
+      }
+
+      const payload = {
+        numero_contrat: numeroContrat,
+        objet: form.objet.trim() || null,
+        date_signature: form.date_signature || null,
+        date_debut: form.date_debut || "",
+        date_fin: form.date_fin || "",
+        quantite_contractuelle: toNumberOrDefault(
+          form.quantite_contractuelle,
+          0
+        ),
+        quantite_realisee: toNumberOrDefault(form.quantite_realisee, 0),
+        taux_depassement_autorise: toNumberOrDefault(
+          form.taux_depassement_autorise,
+          0.2
+        ),
+        montant_ht: toNumberOrNull(form.montant_ht),
+        montant_tva: toNumberOrDefault(form.montant_tva, 0),
+        taux_cautionnement: toNumberOrDefault(form.taux_cautionnement, 3),
+        taux_penalite_retard: toNumberOrDefault(
+          form.taux_penalite_retard,
+          0.002
+        ),
+        plafond_penalite: toNumberOrDefault(form.plafond_penalite, 5),
+        prix_unitaire: toNumberOrNull(form.prix_unitaire),
+        statut: form.statut,
+        fournisseur_id: form.fournisseur_id,
+        emballage_id: form.emballage_id,
+      };
+
+      let updated: TableContrat;
+
+      if (editing) {
+        const res = await updateContrat(editing.id, payload);
+        updated = normalizeContrat(res.updateContrat);
+      } else {
+        const res = await createContrat(payload);
+        updated = normalizeContrat(res.createContrat);
+      }
+
+      updated.fournisseur = fournisseurs.find(
+        (f) => String(f.id) === String(payload.fournisseur_id)
+      );
+      updated.emballage = emballages.find(
+        (em) => String(em.id) === String(payload.emballage_id)
+      );
+
+      setRows((prev) =>
+        editing
+          ? prev.map((r) => (r.id === updated.id ? updated : r))
+          : [updated, ...prev]
+      );
+
+      setIsOpen(false);
+      setEditing(null);
+      setForm(emptyForm);
+      setOcrRawText("");
+    } catch (err) {
+      console.error(err);
+      alert("Erreur de sauvegarde : vérifiez les champs obligatoires.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col gap-6 min-h-[700px]">
       <ContratHeader
         query={query}
         setQuery={setQuery}
         onOpenNew={() => {
           setEditing(null);
           setForm(emptyForm);
+          setOcrRawText("");
           setIsOpen(true);
         }}
+        onOpenOcr={() => setIsOcrOpen(true)}
+        stats={stats}
       />
 
-      <div className="overflow-auto">
+      <div className="flex-1">
         <ContratListView
           rows={paginatedRows}
           onEdit={(c) => {
             setEditing(c);
-            setForm(c);
+            setForm(mapContratToForm(c));
+            setOcrRawText("");
             setIsOpen(true);
           }}
-          onDelete={handleDelete}
-          highlightedId={highlightedId}
+          onDelete={async (id) => {
+            if (confirm("Voulez-vous vraiment supprimer ce contrat ?")) {
+              await deleteContrat(id);
+              setRows((prev) => prev.filter((x) => x.id !== id));
+            }
+          }}
         />
       </div>
 
       {totalPages > 1 && (
-        <div className="flex justify-center py-4">
-          <Pagination
+        <div className="mt-4 flex justify-center items-center py-6 bg-white rounded-[2rem] border border-gray-50 shadow-sm animate-in fade-in zoom-in-95 duration-300">
+          <LocalPagination
             currentPage={currentPage}
             totalPages={totalPages}
-            onPageChange={handlePageChange}
+            onPageChange={setCurrentPage}
           />
         </div>
       )}
+
+      <OcrUploadModal<OcrContratMappedData>
+        open={isOcrOpen}
+        onClose={() => setIsOcrOpen(false)}
+        entityType="contrat"
+        onUseData={(data, rawText) => {
+          setOcrRawText(rawText || "");
+          applyOcrToContratForm(data || {}, rawText || "");
+        }}
+      />
 
       <ContratForm
         isOpen={isOpen}
@@ -247,6 +617,7 @@ export default function ContratTable({ data }: { data?: TableContrat[] }) {
         loading={loading}
         fournisseurs={fournisseurs}
         emballages={emballages}
+        ocrRawText={ocrRawText}
       />
     </div>
   );

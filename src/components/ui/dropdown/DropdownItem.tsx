@@ -1,5 +1,4 @@
-import type React from "react";
-import Link from "next/link";
+import { Link } from "lucide-react";
 
 interface DropdownItemProps {
   tag?: "a" | "button";
@@ -8,6 +7,7 @@ interface DropdownItemProps {
   onItemClick?: () => void;
   baseClassName?: string;
   className?: string;
+  style?: React.CSSProperties;  // ← add this
   children: React.ReactNode;
 }
 
@@ -18,28 +18,27 @@ export const DropdownItem: React.FC<DropdownItemProps> = ({
   onItemClick,
   baseClassName = "block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900",
   className = "",
+  style,                         // ← destructure
   children,
 }) => {
   const combinedClasses = `${baseClassName} ${className}`.trim();
 
   const handleClick = (event: React.MouseEvent) => {
-    if (tag === "button") {
-      event.preventDefault();
-    }
+    if (tag === "button") event.preventDefault();
     if (onClick) onClick();
     if (onItemClick) onItemClick();
   };
 
   if (tag === "a" && href) {
     return (
-      <Link href={href} className={combinedClasses} onClick={handleClick}>
+      <Link href={href} className={combinedClasses} style={style} onClick={handleClick}>
         {children}
       </Link>
     );
   }
 
   return (
-    <button onClick={handleClick} className={combinedClasses}>
+    <button onClick={handleClick} className={combinedClasses} style={style}>
       {children}
     </button>
   );

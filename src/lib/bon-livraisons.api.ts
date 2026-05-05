@@ -40,6 +40,17 @@ const BON_LIVRAISON_FIELDS = `
   validated_by
   created_at
   updated_at
+  commande {
+    id
+    numero_commande
+    date_livraison_prevue
+    fournisseur_id
+    contrat {
+      id
+      prix_unitaire
+      taux_penalite_retard
+    }
+  }
 `;
 
 const LIST_BON_LIVRAISONS = `
@@ -147,8 +158,8 @@ export async function createBonLivraisonWithFile(
 
     throw new Error(
       result?.errors?.[0]?.extensions?.debugMessage ||
-        result?.errors?.[0]?.message ||
-        "Erreur upload BL"
+      result?.errors?.[0]?.message ||
+      "Erreur upload BL"
     );
   }
 

@@ -3,7 +3,7 @@
 import React, { useState, ChangeEvent, FormEvent } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "@/icons";
 import Input from "@/components/form/input/InputField";
@@ -14,7 +14,6 @@ import { useAuth } from "@/context/AuthContext";
 
 export default function SignInForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { login } = useAuth();
 
   const [email, setEmail] = useState("");
@@ -27,6 +26,7 @@ export default function SignInForm() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+
     setLoading(true);
     setError(null);
     setInfo(null);
@@ -46,23 +46,37 @@ export default function SignInForm() {
     }
 
     try {
-      await login({
+      const payload = await login({
         email: cleanEmail,
         password,
         remember: isChecked,
       });
 
-const redirectTo = searchParams.get("redirect") || "/";
-router.replace(redirectTo);
+      const role = payload.user.role;
+
+      if (
+        role === "ADMIN" ||
+        role === "RESPONSABLE_APPROVISIONNEMENT" ||
+        role === "RESPONSABLE_STOCKAGE"
+      ) {
+        router.replace("/");
+      } else {
+        setError("Votre rôle n'est pas encore validé par l'administrateur.");
+      }
     } catch (err: any) {
       const message = err?.message || "Erreur lors de la connexion.";
+      const lowerMessage = message.toLowerCase();
 
-      if (message.toLowerCase().includes("email not verified")) {
+      if (lowerMessage.includes("email not verified")) {
         setError("Votre email n'est pas encore vérifié.");
         setInfo(
           "Vérifiez votre boîte mail puis cliquez sur le lien de vérification avant de vous connecter."
         );
-      } else if (message.toLowerCase().includes("invalid credentials")) {
+      } else if (lowerMessage.includes("pending admin")) {
+        setError("Votre compte est en attente de validation par l'administrateur.");
+      } else if (lowerMessage.includes("account inactive")) {
+        setError("Votre compte est bloqué. Contactez l'administrateur.");
+      } else if (lowerMessage.includes("invalid credentials")) {
         setError("Email ou mot de passe incorrect.");
       } else {
         setError(message);
@@ -93,6 +107,7 @@ router.replace(redirectTo);
                 S
               </div>
             </div>
+
             <div className="flex flex-col">
               <span className="text-3xl font-black tracking-tighter leading-none text-white">
                 OCT
@@ -107,13 +122,14 @@ router.replace(redirectTo);
             La gestion <br />
             <span className="text-emerald-300 italic">réinventée.</span>
           </h2>
+
           <p className="text-emerald-50/80 text-xl max-w-md leading-relaxed font-light">
             Une traçabilité totale pour vos emballages, du fournisseur jusqu&apos;au stockage final.
           </p>
         </div>
 
         <div className="relative z-20 self-start flex items-center gap-5 bg-white/10 backdrop-blur-xl p-5 rounded-[2rem] border border-white/20 shadow-2xl transform transition-all hover:translate-x-2">
-          <div className="w-12 h-12 rounded-full bg-emerald-400 flex items-center justify-center font-black text-[#00A09D] text-xl shadow-[0_0_20px_rgba(52,211,153,0.4)]">
+          <div className="w-12 h-12 rounded-full bg-emerald-400 flex items-center justify-center font-black text-[#00A09D] text-xl">
             ✓
           </div>
           <div className="flex flex-col">
@@ -152,7 +168,9 @@ router.replace(redirectTo);
               </Label>
               <Input
                 defaultValue={email}
-                onChange={(e: ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+                onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                  setEmail(e.target.value)
+                }
                 placeholder="admin@stockmaster.com"
                 type="email"
                 className="w-full border-gray-100 bg-gray-50/50 focus:bg-white focus:border-[#00A09D] focus:ring-[6px] focus:ring-[#00A09D]/5 transition-all py-5 px-7 rounded-2xl border-2 text-sm font-semibold"
@@ -175,11 +193,14 @@ router.replace(redirectTo);
               <div className="relative group">
                 <Input
                   defaultValue={password}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                    setPassword(e.target.value)
+                  }
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••••••"
                   className="w-full border-gray-100 bg-gray-50/50 focus:bg-white focus:border-[#00A09D] focus:ring-[6px] focus:ring-[#00A09D]/5 transition-all py-5 px-7 rounded-2xl border-2 text-sm font-semibold"
                 />
+
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}

@@ -1,5 +1,5 @@
 import { graphqlRequest } from "@/lib/graphqlClient";
-import type { WarehouseDetailedItem } from "@/types/dashboard.types";
+import type { StockArchiveSummary, WarehouseDetailedItem } from "@/types/dashboard.types";
 
 import type {
   DashboardOverview,
@@ -299,4 +299,32 @@ export async function getOrdersWidget(): Promise<OrdersWidgetData> {
 
   const data = await graphqlRequest<{ ordersWidget: OrdersWidgetData }>(query);
   return data.ordersWidget;
+}
+
+
+
+export async function fetchStockArchiveSummary(): Promise<StockArchiveSummary> {
+  const query = `
+    query StockArchiveSummary {
+      stockArchiveSummary {
+        total_in
+        total_out
+        today_in
+        today_out
+        balance
+       days {
+  date
+  entree: in
+  sortie: out
+  balance
+}
+      }
+    }
+  `;
+
+  const data = await graphqlRequest<{
+    stockArchiveSummary: StockArchiveSummary;
+  }>(query);
+
+  return data.stockArchiveSummary;
 }

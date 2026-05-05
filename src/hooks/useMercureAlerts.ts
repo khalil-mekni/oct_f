@@ -1,31 +1,16 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import type { Alert } from "@/lib/notifications.api";
 
-type MercureAlert = {
-  id: string | number;
-  type: string;
-  title: string;
-  message: string;
-  severity: "info" | "warning" | "critical";
-  status: "unread" | "read" | "archived";
-  entity_type?: string | null;
-  entity_id?: string | number | null;
-  action_url?: string | null;
-  metadata?: Record<string, unknown> | null;
-  is_active: boolean;
-  read_at?: string | null;
-  archived_at?: string | null;
-  created_at?: string | null;
-  updated_at?: string | null;
-};
+type MercureAlert = Alert;
 
 type MercurePayload = {
   event: "alert.created" | "alert.updated";
   alert?: MercureAlert;
 };
 
-function dedupeAlerts(alerts: MercureAlert[]): MercureAlert[] {
-  const map = new Map<string, MercureAlert>();
+function dedupeAlerts(alerts: Alert[]): Alert[] {
+  const map = new Map<string, Alert>();
 
   for (const alert of alerts) {
     map.set(String(alert.id), alert);
@@ -34,8 +19,13 @@ function dedupeAlerts(alerts: MercureAlert[]): MercureAlert[] {
   return Array.from(map.values()).sort((a, b) => {
     const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
     const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+
     return dateB - dateA;
   });
+}
+
+function computeUnreadCount(alerts: Alert[]): number {
+  return alerts.filter((a) => a.user_status === "unread").length;
 }
 
 export const useMercureAlerts = () => {
@@ -53,10 +43,23 @@ export const useMercureAlerts = () => {
 
         if (!data.alert) return;
 
-        queryClient.setQueryData(["alerts"], (old: MercureAlert[] | undefined) => {
-          const current = Array.isArray(old) ? old : [];
-          return dedupeAlerts([data.alert!, ...current]);
-        });
+        queryClient.setQueryData<Alert[]>(["alerts"], (old = []) => {
+  const current = Array.isArray(old) ? old : [];
+
+  const normalizedAlert: Alert = {
+    ...data.alert!,
+    user_status: data.alert!.user_status ?? "unread",
+  };
+
+  const next = dedupeAlerts([normalizedAlert, ...current]);
+
+  queryClient.setQueryData<number>(
+    ["alerts-unread-count"],
+    computeUnreadCount(next)
+  );
+
+  return next;
+});
       } catch (error) {
         console.error("Erreur parsing Mercure", error);
       }

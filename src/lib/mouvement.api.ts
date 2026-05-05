@@ -3,6 +3,9 @@ import { graphqlRequest } from "./graphqlClient";
 export type EntrepotOption = {
   id: string;
   nom: string;
+  capacite_totale?: number;
+  stock_existant?: number;
+  capacite_disponible?: number;
 };
 
 export type EmballageOption = {

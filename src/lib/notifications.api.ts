@@ -21,13 +21,16 @@ export interface Alert {
   title: string;
   message: string;
   severity: AlertSeverity;
-  status: AlertStatus;
+
+  user_status: AlertStatus;
+  user_read_at?: string | null;
+  user_archived_at?: string | null;
+
   entity_type?: string | null;
   entity_id?: string | number | null;
   action_url?: string | null;
   is_active: boolean;
   metadata?: Record<string, any> | null;
-  read_at?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
 }
@@ -40,12 +43,13 @@ const GET_ALERTS_QUERY = `
       title
       message
       severity
-      status
+      user_status
+      user_read_at
+      user_archived_at
       entity_type
       entity_id
       action_url
       is_active
-      read_at
       created_at
       updated_at
     }
@@ -62,8 +66,8 @@ const MARK_ALERT_AS_READ_MUTATION = `
   mutation MarkAlertAsRead($id: ID!) {
     markAlertAsRead(id: $id) {
       id
-      status
-      read_at
+      user_status
+      user_read_at
     }
   }
 `;
@@ -78,7 +82,8 @@ const ARCHIVE_ALERT_MUTATION = `
   mutation ArchiveAlert($id: ID!) {
     archiveAlert(id: $id) {
       id
-      status
+      user_status
+      user_archived_at
     }
   }
 `;
@@ -99,8 +104,8 @@ export async function markAlertAsRead(id: string) {
   return graphqlRequest<{
     markAlertAsRead: {
       id: string;
-      status: AlertStatus;
-      read_at?: string | null;
+      user_status: AlertStatus;
+      user_read_at?: string | null;
     };
   }>(MARK_ALERT_AS_READ_MUTATION, { id }).then((d) => d.markAlertAsRead);
 }
@@ -115,7 +120,8 @@ export async function archiveAlert(id: string) {
   return graphqlRequest<{
     archiveAlert: {
       id: string;
-      status: AlertStatus;
+      user_status: AlertStatus;
+      user_archived_at?: string | null;
     };
   }>(ARCHIVE_ALERT_MUTATION, { id }).then((d) => d.archiveAlert);
 }

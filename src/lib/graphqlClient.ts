@@ -17,11 +17,43 @@ function getStoredToken(): string | undefined {
   return undefined;
 }
 
+function extractGraphQLErrorMessage(errors: any[]): string {
+  if (!Array.isArray(errors) || errors.length === 0) {
+    return "Erreur GraphQL inconnue.";
+  }
+
+  return errors
+    .map((error) => {
+      if (error?.extensions?.validation) {
+        return Object.values(error.extensions.validation).flat().join("\n");
+      }
+
+      if (error?.extensions?.debugMessage) {
+        return error.extensions.debugMessage;
+      }
+
+      if (typeof error?.message === "string" && error.message.trim()) {
+        return error.message;
+      }
+
+      if (typeof error === "string") {
+        return error;
+      }
+
+      return "Erreur GraphQL inconnue.";
+    })
+    .join("\n");
+}
+
 export async function graphqlRequest<T>(
   query: string,
   variables: Record<string, any> = {},
   options: RequestOptions = {}
 ): Promise<T> {
+  if (!GRAPHQL_ENDPOINT) {
+    throw new Error("NEXT_PUBLIC_GRAPHQL_ENDPOINT est manquant.");
+  }
+
   const token = options.token ?? getStoredToken();
 
   const headers: HeadersInit = {
@@ -30,28 +62,53 @@ export async function graphqlRequest<T>(
   };
 
   if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
+    headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(GRAPHQL_ENDPOINT, {
-    method: "POST",
-    headers,
-    body: JSON.stringify({
-      query,
-      variables,
-    }),
-    cache: "no-store",
-  });
+  let response: Response;
 
-  const result = await response.json();
+  try {
+    response = await fetch(GRAPHQL_ENDPOINT, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        query,
+        variables,
+      }),
+      cache: "no-store",
+    });
+  } catch {
+    throw new Error("Impossible de contacter le serveur GraphQL.");
+  }
+
+  let result: any;
+
+  try {
+    result = await response.json();
+  } catch {
+    throw new Error("Réponse serveur invalide.");
+  }
 
   if (!response.ok) {
-    throw new Error(result?.message || "Network error");
+    const message =
+      result?.errors?.length
+        ? extractGraphQLErrorMessage(result.errors)
+        : result?.message || `Erreur réseau (${response.status}).`;
+
+    throw new Error(message);
   }
 
   if (result.errors?.length) {
-    throw new Error(result.errors[0].message || "GraphQL error");
+    console.warn("GraphQL ERROR:", result.errors);
+
+    const message = extractGraphQLErrorMessage(result.errors);
+
+    throw new Error(message);
   }
 
-  return result.data;
+  if (!result || !("data" in result)) {
+    throw new Error("Réponse GraphQL sans champ data.");
+  }
+
+  return result.data as T;
 }

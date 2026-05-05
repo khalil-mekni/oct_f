@@ -7,41 +7,20 @@ import React, {
   useMemo,
   useState,
 } from "react";
+
 import {
   login as apiLogin,
   logout as apiLogout,
   me as apiMe,
   register as apiRegister,
+  type AuthPayload,
+  type User,
+  type LoginInput as ApiLoginInput,
+  type RegisterInput,
 } from "@/lib/auth.api";
 
-export type User = {
-  id: string;
-  name: string;
-  first_name?: string | null;
-  last_name?: string | null;
-  email: string;
-  role: string;
-  phone?: string | null;
-  birth_date?: string | null;
-  address?: string | null;
-  is_active?: boolean | null;
-  last_login_at?: string | null;
-};
-
-export type LoginInput = {
-  email: string;
-  password: string;
+export type LoginInput = ApiLoginInput & {
   remember?: boolean;
-};
-
-export type RegisterInput = {
-  first_name: string;
-  last_name: string;
-  email: string;
-  password: string;
-  phone?: string;
-  birth_date?: string;
-  address?: string;
 };
 
 type AuthContextType = {
@@ -49,8 +28,8 @@ type AuthContextType = {
   token: string | null;
   loading: boolean;
   isAuthenticated: boolean;
-  login: (input: LoginInput) => Promise<void>;
-  register: (input: RegisterInput) => Promise<void>;
+  login: (input: LoginInput) => Promise<AuthPayload>;
+  register: (input: RegisterInput) => Promise<AuthPayload>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 };
@@ -62,7 +41,9 @@ const TOKEN_KEY = "access_token";
 function getStoredToken(): string | null {
   if (typeof window === "undefined") return null;
 
-  const token = localStorage.getItem(TOKEN_KEY);
+  const localToken = localStorage.getItem(TOKEN_KEY);
+  const sessionToken = sessionStorage.getItem(TOKEN_KEY);
+  const token = localToken || sessionToken;
 
   if (!token || token === "undefined" || token === "null") {
     return null;
@@ -71,20 +52,28 @@ function getStoredToken(): string | null {
   return token;
 }
 
-function setStoredToken(token: string) {
+function setStoredToken(token: string, remember = true) {
   if (typeof window === "undefined") return;
 
+  localStorage.removeItem(TOKEN_KEY);
+  sessionStorage.removeItem(TOKEN_KEY);
+
   if (!token || token === "undefined" || token === "null") {
-    localStorage.removeItem(TOKEN_KEY);
     return;
   }
 
-  localStorage.setItem(TOKEN_KEY, token);
+  if (remember) {
+    localStorage.setItem(TOKEN_KEY, token);
+  } else {
+    sessionStorage.setItem(TOKEN_KEY, token);
+  }
 }
 
 function clearStoredToken() {
   if (typeof window === "undefined") return;
+
   localStorage.removeItem(TOKEN_KEY);
+  sessionStorage.removeItem(TOKEN_KEY);
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -138,10 +127,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     window.addEventListener("storage", onStorage);
+
     return () => window.removeEventListener("storage", onStorage);
   }, []);
 
-  const login = async (input: LoginInput) => {
+  const login = async (input: LoginInput): Promise<AuthPayload> => {
     const data = await apiLogin({
       email: input.email,
       password: input.password,
@@ -153,17 +143,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error("Token manquant dans la réponse login.");
     }
 
-    setStoredToken(authToken);
+    setStoredToken(authToken, input.remember ?? true);
     setToken(authToken);
+    setUser(data.user);
 
-    if (data.user) {
-      setUser(data.user);
-    } else {
-      await refreshUser();
-    }
+    return data;
   };
 
-  const register = async (input: RegisterInput) => {
+  const register = async (input: RegisterInput): Promise<AuthPayload> => {
     const data = await apiRegister(input);
 
     const authToken = data?.token;
@@ -172,14 +159,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error("Token manquant dans la réponse register.");
     }
 
-    setStoredToken(authToken);
+    setStoredToken(authToken, true);
     setToken(authToken);
+    setUser(data.user);
 
-    if (data.user) {
-      setUser(data.user);
-    } else {
-      await refreshUser();
-    }
+    return data;
   };
 
   const logout = async () => {

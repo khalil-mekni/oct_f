@@ -1,128 +1,99 @@
-// OrdersWidget.tsx
 "use client";
 
-import Badge from "../ui/badge/Badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHeader,
-  TableRow,
-} from "../ui/table";
-import { ShoppingCart, Clock3, PackageCheck, TriangleAlert, TrendingUp, TrendingDown, CalendarDays, Truck, CheckCircle2, AlertCircle, Building2, ChevronRight, Gauge } from "lucide-react";
-import { useOrdersWidget } from "@/hooks/useOrdersWidget";
 import { useState } from "react";
-import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend, LineChart, Line, Area, AreaChart } from "recharts";
+import Badge from "../ui/badge/Badge";
+import { Table, TableBody, TableCell, TableHeader, TableRow } from "../ui/table";
+import {
+  ShoppingCart, Clock3, PackageCheck, TriangleAlert,
+  CheckCircle2, AlertCircle, Building2, ChevronRight, TrendingUp, TrendingDown,
+} from "lucide-react";
+import { useOrdersWidget } from "@/hooks/useOrdersWidget";
+import {
+  AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip,
+  ResponsiveContainer, CartesianGrid, Cell,
+} from "recharts";
+
+/* ─── Helpers ─────────────────────────────────────────────── */
 
 function statusColor(status: string) {
   switch (status?.toLowerCase()) {
-    case "validated":
-    case "validée":
-    case "reçue":
-    case "received":
-      return "success";
-    case "pending":
-    case "en attente":
-      return "warning";
-    case "partial":
-    case "partielle":
-      return "light";
-    case "late":
-    case "retard":
-      return "error";
-    default:
-      return "light";
+    case "validated": case "validée": case "reçue": case "received": return "success";
+    case "pending": case "en attente": return "warning";
+    case "partial": case "partielle": return "light";
+    case "late": case "retard": return "error";
+    default: return "light";
   }
 }
-
-function getStatusLabel(status: string): string {
-  switch (status?.toLowerCase()) {
+function getStatusLabel(s: string) {
+  switch (s?.toLowerCase()) {
     case "validated": return "Validée";
-    case "received": return "Reçue";
-    case "pending": return "En attente";
-    case "partial": return "Partielle";
-    case "late": return "En retard";
-    default: return status;
+    case "received":  return "Reçue";
+    case "pending":   return "En attente";
+    case "partial":   return "Partielle";
+    case "late":      return "En retard";
+    default:          return s;
   }
 }
 
-function getDeliveryStatus(daysSinceOrder: number): { label: string; color: string; icon: any } {
-  if (daysSinceOrder < 0) return { label: "En avance", color: "text-emerald-600 bg-emerald-50", icon: TrendingUp };
-  if (daysSinceOrder === 0) return { label: "À temps", color: "text-emerald-600 bg-emerald-50", icon: CheckCircle2 };
-  if (daysSinceOrder <= 3) return { label: "Retard léger", color: "text-amber-600 bg-amber-50", icon: Clock3 };
-  if (daysSinceOrder <= 7) return { label: "Retard modéré", color: "text-orange-600 bg-orange-50", icon: AlertCircle };
-  return { label: "Retard critique", color: "text-rose-600 bg-rose-50", icon: TriangleAlert };
-}
+/* ─── Custom tooltip ──────────────────────────────────────── */
 
-function MiniStat({
-  label,
-  value,
-  icon,
-  trend,
-  color = "light",
-}: {
-  label: string;
-  value: string | number;
-  icon: React.ReactNode;
-  trend?: { value: number; isPositive: boolean };
-  color?: "success" | "warning" | "error" | "light";
-}) {
+function ChartTooltip({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null;
   return (
-    <div className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-white to-slate-50 p-4 shadow-md border border-slate-100 hover:shadow-lg transition-all duration-300">
-      <div className="relative z-10">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">{label}</span>
-          <div className="rounded-lg bg-gradient-to-br from-blue-100 to-indigo-100 p-1.5 text-blue-600 group-hover:scale-110 transition-transform">
-            {icon}
-          </div>
-        </div>
-        <div className="flex items-baseline justify-between">
-          <h4 className="text-2xl font-bold text-slate-800">{value}</h4>
-          {trend && (
-            <div className={`flex items-center gap-0.5 text-xs font-medium ${
-              trend.isPositive ? "text-emerald-600" : "text-rose-600"
-            }`}>
-              <TrendingUp className={`h-3 w-3 ${!trend.isPositive && "rotate-180"}`} />
-              <span>{Math.abs(trend.value)}%</span>
-            </div>
-          )}
-        </div>
-        <div className="mt-2">
-          <Badge size="sm" color={color as any}>
-            {label}
-          </Badge>
-        </div>
-      </div>
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+    <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800 px-3 py-2 shadow-xl text-xs">
+      <p className="font-bold text-slate-700 dark:text-slate-200 mb-1">{label}</p>
+      {payload.map((p: any, i: number) => (
+        <p key={i} style={{ color: p.color }} className="font-semibold">{p.name}: {p.value}</p>
+      ))}
     </div>
   );
 }
 
+/* ─── Big KPI card ─────────────────────────────────────────── */
+
+function BigKpi({ label, value, icon: Icon, trend, color, bg }: {
+  label: string; value: number; icon: React.ElementType;
+  trend?: number; color: string; bg: string;
+}) {
+  return (
+    <div className={`relative overflow-hidden rounded-2xl ${bg} p-5`}>
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-widest opacity-70">{label}</p>
+          <p className={`mt-1 text-3xl font-black tabular-nums ${color}`}>{value}</p>
+        </div>
+        <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${color} bg-white/20`}>
+          <Icon className="size-4" />
+        </div>
+      </div>
+      {trend !== undefined && (
+        <div className={`mt-3 flex items-center gap-1 text-[11px] font-bold ${trend >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+          {trend >= 0 ? <TrendingUp className="size-3" /> : <TrendingDown className="size-3" />}
+          {Math.abs(trend)}% ce mois
+        </div>
+      )}
+      {/* Decorative circle */}
+      <div className="pointer-events-none absolute -bottom-4 -right-4 h-20 w-20 rounded-full bg-white/10" />
+    </div>
+  );
+}
+
+/* ─── Main ─────────────────────────────────────────────────── */
+
 export default function OrdersWidget() {
   const { data, isLoading, isError, error } = useOrdersWidget();
-  const [expandedView, setExpandedView] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   if (isLoading) {
     return (
-      <div className="rounded-2xl bg-white p-6 shadow-xl border border-slate-100">
-        <div className="space-y-4 animate-pulse">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-slate-200" />
-            <div className="space-y-2">
-              <div className="h-5 w-32 rounded-lg bg-slate-200" />
-              <div className="h-3 w-48 rounded-lg bg-slate-100" />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-28 rounded-xl bg-slate-100" />
-            ))}
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="h-48 rounded-xl bg-slate-100" />
-            <div className="h-48 rounded-xl bg-slate-100" />
-          </div>
-          <div className="h-64 rounded-xl bg-slate-100" />
+      <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 p-6 animate-pulse">
+        <div className="h-10 w-48 rounded-xl bg-slate-100 dark:bg-white/10 mb-6" />
+        <div className="grid grid-cols-4 gap-4 mb-6">
+          {[...Array(4)].map((_, i) => <div key={i} className="h-28 rounded-2xl bg-slate-100 dark:bg-white/5" />)}
+        </div>
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="h-48 rounded-2xl bg-slate-100 dark:bg-white/5" />
+          <div className="h-48 rounded-2xl bg-slate-100 dark:bg-white/5" />
         </div>
       </div>
     );
@@ -130,372 +101,220 @@ export default function OrdersWidget() {
 
   if (isError || !data) {
     return (
-      <div className="rounded-2xl bg-gradient-to-br from-rose-50 to-rose-100/50 p-6 text-center shadow-lg border border-rose-200">
-        <div className="w-12 h-12 rounded-full bg-rose-100 flex items-center justify-center mx-auto mb-3">
-          <AlertCircle className="h-6 w-6 text-rose-500" />
-        </div>
-        <p className="text-sm font-medium text-rose-600">
-          Erreur chargement des commandes
-        </p>
-        <p className="text-xs text-rose-500/70 mt-1">
-          {error instanceof Error ? error.message : "Erreur inconnue"}
-        </p>
+      <div className="rounded-3xl border border-rose-200 dark:border-rose-500/20 bg-rose-50 dark:bg-rose-950/30 p-8 text-center">
+        <AlertCircle className="mx-auto mb-3 size-10 text-rose-400" />
+        <p className="font-bold text-rose-700 dark:text-rose-400">Erreur chargement des commandes</p>
+        {error instanceof Error && <p className="mt-1 text-sm text-rose-500">{error.message}</p>}
       </div>
     );
   }
 
-  const totalOrders = data.total;
-  const completionRate = totalOrders > 0 ? ((totalOrders - data.pending - data.late) / totalOrders) * 100 : 0;
-  const lateRate = totalOrders > 0 ? (data.late / totalOrders) * 100 : 0;
-  const pendingRate = totalOrders > 0 ? (data.pending / totalOrders) * 100 : 0;
+  const total         = data.total;
+  const completionPct = total > 0 ? ((total - data.pending - data.late) / total) * 100 : 0;
+  const latePct       = total > 0 ? (data.late    / total) * 100 : 0;
+  const pendingPct    = total > 0 ? (data.pending / total) * 100 : 0;
 
-  // Données pour le graphique en entonnoir (funnel)
-  const funnelData = [
-    { name: "Commandes totales", value: data.total, color: "#3b82f6" },
-    { name: "En traitement", value: data.pending, color: "#f59e0b" },
-    { name: "Partiellement reçues", value: data.partiallyReceived, color: "#8b5cf6" },
-    { name: "Validées", value: data.total - data.pending - data.late - data.partiallyReceived, color: "#10b981" },
-  ];
+  /* Build timeline chart data from recentOrders */
+  const dateMap: Record<string, { validées: number; attente: number; retard: number }> = {};
+  data.recentOrders.forEach((o) => {
+    if (!o.date) return;
+    const d = new Date(o.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
+    if (!dateMap[d]) dateMap[d] = { validées: 0, attente: 0, retard: 0 };
+    if (o.status === "validated" || o.status === "received") dateMap[d].validées++;
+    else if (o.status === "pending") dateMap[d].attente++;
+    else if (o.status === "late") dateMap[d].retard++;
+  });
+  const timelineData = Object.entries(dateMap).map(([date, v]) => ({ date, ...v }));
 
-  // Données pour la timeline des commandes par jour
-  const ordersByDate = data.recentOrders.reduce((acc: any, order) => {
-    if (order.date) {
-      const date = new Date(order.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
-      acc[date] = (acc[date] || 0) + 1;
-    }
-    return acc;
-  }, {});
+  /* Supplier bar chart */
+  const suppMap: Record<string, number> = {};
+  data.recentOrders.forEach((o) => {
+    const s = o.supplierName || "Autre";
+    suppMap[s] = (suppMap[s] || 0) + 1;
+  });
+  const supplierData = Object.entries(suppMap)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6)
+    .map(([name, count]) => ({ name: name.length > 10 ? name.slice(0, 10) + "…" : name, count }));
 
-  const timelineData = Object.entries(ordersByDate).map(([date, count]) => ({ date, count }));
+  const COLORS = ["#818cf8", "#34d399", "#f472b6", "#fb923c", "#60a5fa", "#a78bfa"];
+
+  const displayed = expanded ? data.recentOrders : data.recentOrders.slice(0, 5);
 
   return (
-    <div className="rounded-2xl bg-gradient-to-br from-white via-slate-50/30 to-white p-6 shadow-xl border border-slate-100">
-      {/* En-tête */}
-      <div className="mb-6">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-xl blur-lg opacity-40" />
-            <div className="relative rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 p-2.5 shadow-md">
-              <ShoppingCart className="h-5 w-5 text-white" />
-            </div>
+    <div className="overflow-hidden rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 shadow-sm">
+
+      {/* ── Header bar ── */}
+      <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/8 px-6 py-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/30">
+            <ShoppingCart className="size-4 text-white" />
           </div>
           <div>
-            <h3 className="text-xl font-bold text-slate-800">
-              Gestion des commandes
-            </h3>
-            <p className="text-sm text-slate-500 mt-0.5">
-              Suivi des commandes, réceptions et retards
-            </p>
+            <h3 className="font-bold text-slate-800 dark:text-white">Gestion des commandes</h3>
+            <p className="text-xs text-slate-400">Suivi des commandes, réceptions et retards</p>
           </div>
         </div>
+        <span className="flex items-center gap-1.5 rounded-full bg-blue-50 dark:bg-blue-500/10 px-3 py-1 text-[11px] font-bold text-blue-600 dark:text-blue-400">
+          <span className="size-1.5 rounded-full bg-blue-500 animate-pulse inline-block" />
+          Temps réel
+        </span>
       </div>
 
-      {/* Cartes statistiques */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <MiniStat
-          label="Total"
-          value={data.total}
-          icon={<ShoppingCart className="h-4 w-4" />}
-          trend={{ value: 8, isPositive: true }}
-          color="light"
-        />
-        <MiniStat
-          label="En attente"
-          value={data.pending}
-          icon={<Clock3 className="h-4 w-4" />}
-          color={data.pending > 0 ? "warning" : "success"}
-        />
-        <MiniStat
-          label="Partielles"
-          value={data.partiallyReceived}
-          icon={<PackageCheck className="h-4 w-4" />}
-          color="light"
-        />
-        <MiniStat
-          label="En retard"
-          value={data.late}
-          icon={<TriangleAlert className="h-4 w-4" />}
-          color={data.late > 0 ? "error" : "success"}
-        />
-      </div>
+      <div className="p-6 space-y-6">
 
-      {/* Section visualisation - Graphiques */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {/* Graphique en entonnoir - Funnel */}
-        <div className="rounded-xl bg-white p-4 border border-slate-100 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <div className="p-1 rounded-lg bg-indigo-100">
-                <Gauge className="h-3.5 w-3.5 text-indigo-600" />
+        {/* ── KPI row ── */}
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <BigKpi label="Total commandes" value={data.total}             icon={ShoppingCart}   color="text-indigo-600 dark:text-indigo-400"  bg="bg-indigo-50  dark:bg-indigo-500/10"  trend={8}  />
+          <BigKpi label="En attente"      value={data.pending}           icon={Clock3}          color="text-amber-600  dark:text-amber-400"   bg="bg-amber-50   dark:bg-amber-500/10"   trend={-3} />
+          <BigKpi label="Partielles"      value={data.partiallyReceived} icon={PackageCheck}    color="text-violet-600 dark:text-violet-400"  bg="bg-violet-50  dark:bg-violet-500/10"  />
+          <BigKpi label="En retard"       value={data.late}              icon={TriangleAlert}   color="text-rose-600   dark:text-rose-400"    bg="bg-rose-50    dark:bg-rose-500/10"    trend={latePct > 10 ? 5 : -2} />
+        </div>
+
+        {/* ── Charts row ── */}
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-5">
+
+          {/* Area chart — timeline (3/5) */}
+          <div className="lg:col-span-3 rounded-2xl border border-slate-100 dark:border-white/8 bg-slate-50 dark:bg-white/[0.02] p-5">
+            <div className="mb-4 flex items-center justify-between">
+              <h4 className="text-sm font-bold text-slate-700 dark:text-slate-200">Activité des commandes</h4>
+              <div className="flex items-center gap-3 text-[10px] font-semibold">
+                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-indigo-500" />Validées</span>
+                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-500" />Attente</span>
+                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-rose-500" />Retard</span>
               </div>
-              <span className="text-xs font-semibold text-slate-700">Entonnoir de traitement</span>
             </div>
+            {timelineData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={180}>
+                <AreaChart data={timelineData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="gradV" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%"  stopColor="#818cf8" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#818cf8" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="gradA" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%"  stopColor="#f59e0b" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="gradR" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%"  stopColor="#f43f5e" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-slate-200 dark:text-white/5" />
+                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: "currentColor" }} className="text-slate-400" />
+                  <YAxis tick={{ fontSize: 10, fill: "currentColor" }} className="text-slate-400" allowDecimals={false} />
+                  <Tooltip content={<ChartTooltip />} />
+                  <Area type="monotone" dataKey="validées" stroke="#818cf8" strokeWidth={2} fill="url(#gradV)" name="Validées" />
+                  <Area type="monotone" dataKey="attente"  stroke="#f59e0b" strokeWidth={2} fill="url(#gradA)" name="En attente" />
+                  <Area type="monotone" dataKey="retard"   stroke="#f43f5e" strokeWidth={2} fill="url(#gradR)" name="Retard" />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex h-44 items-center justify-center text-sm text-slate-400">Pas encore de données</div>
+            )}
           </div>
-          <div className="space-y-3">
-            {funnelData.map((item, idx) => {
-              const percentage = totalOrders > 0 ? (item.value / totalOrders) * 100 : 0;
-              return (
-                <div key={idx} className="group">
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-slate-600">{item.name}</span>
-                    <span className="font-medium" style={{ color: item.color }}>{item.value}</span>
-                  </div>
-                  <div className="relative h-2 overflow-hidden rounded-full bg-slate-100">
-                    <div 
-                      className="absolute left-0 top-0 h-full rounded-full transition-all duration-700 group-hover:opacity-80"
-                      style={{ width: `${percentage}%`, backgroundColor: item.color }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
+
+          {/* Bar chart — suppliers (2/5) */}
+          <div className="lg:col-span-2 rounded-2xl border border-slate-100 dark:border-white/8 bg-slate-50 dark:bg-white/[0.02] p-5">
+            <h4 className="mb-4 text-sm font-bold text-slate-700 dark:text-slate-200">Top fournisseurs</h4>
+            {supplierData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={180}>
+                <BarChart data={supplierData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-slate-200 dark:text-white/5" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 9, fill: "currentColor" }} className="text-slate-400" />
+                  <YAxis tick={{ fontSize: 10, fill: "currentColor" }} className="text-slate-400" allowDecimals={false} />
+                  <Tooltip content={<ChartTooltip />} />
+                  <Bar dataKey="count" name="Commandes" radius={[6, 6, 0, 0]}>
+                    {supplierData.map((_, i) => (
+                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex h-44 items-center justify-center text-sm text-slate-400">Pas encore de données</div>
+            )}
           </div>
         </div>
 
-        {/* Jauge de performance */}
-        <div className="rounded-xl bg-white p-4 border border-slate-100 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <div className="p-1 rounded-lg bg-emerald-100">
-                <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />
+        {/* ── Performance mini-bars ── */}
+        <div className="grid grid-cols-3 gap-4">
+          {[
+            { label: "Complétion",  pct: completionPct, from: "from-indigo-500", to: "to-violet-500",  val: "text-indigo-600 dark:text-indigo-400" },
+            { label: "En retard",   pct: latePct,       from: "from-rose-500",   to: "to-pink-500",    val: "text-rose-600 dark:text-rose-400" },
+            { label: "En attente",  pct: pendingPct,    from: "from-amber-500",  to: "to-orange-500",  val: "text-amber-600 dark:text-amber-400" },
+          ].map(({ label, pct, from, to, val }) => (
+            <div key={label} className="rounded-2xl border border-slate-100 dark:border-white/8 bg-slate-50 dark:bg-white/[0.02] p-4">
+              <div className="mb-2 flex items-center justify-between text-xs">
+                <span className="font-semibold text-slate-600 dark:text-slate-300">{label}</span>
+                <span className={`font-black tabular-nums ${val}`}>{pct.toFixed(0)}%</span>
               </div>
-              <span className="text-xs font-semibold text-slate-700">Performance des commandes</span>
-            </div>
-          </div>
-          
-          <div className="space-y-4">
-            <div>
-              <div className="flex justify-between text-xs text-slate-500 mb-1">
-                <span>Taux de complétion</span>
-                <span className="font-medium text-emerald-600">{completionRate.toFixed(0)}%</span>
-              </div>
-              <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
-                <div className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-500" style={{ width: `${completionRate}%` }} />
+              <div className="h-2.5 overflow-hidden rounded-full bg-slate-200 dark:bg-white/10">
+                <div
+                  className={`h-full rounded-full bg-gradient-to-r ${from} ${to} transition-all duration-700`}
+                  style={{ width: `${pct}%` }}
+                />
               </div>
             </div>
-            <div>
-              <div className="flex justify-between text-xs text-slate-500 mb-1">
-                <span>Taux de retard</span>
-                <span className="font-medium text-rose-600">{lateRate.toFixed(0)}%</span>
-              </div>
-              <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
-                <div className="h-full rounded-full bg-gradient-to-r from-rose-400 to-orange-500" style={{ width: `${lateRate}%` }} />
-              </div>
-            </div>
-            <div>
-              <div className="flex justify-between text-xs text-slate-500 mb-1">
-                <span>En attente</span>
-                <span className="font-medium text-amber-600">{pendingRate.toFixed(0)}%</span>
-              </div>
-              <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
-                <div className="h-full rounded-full bg-amber-500" style={{ width: `${pendingRate}%` }} />
-              </div>
-            </div>
-          </div>
-
-          {/* Indicateur de santé global */}
-          <div className="mt-4 pt-3 border-t border-slate-100">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] text-slate-500">Santé des commandes</span>
-              <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full ${
-                lateRate > 20 ? "bg-rose-100 text-rose-700" :
-                lateRate > 10 ? "bg-amber-100 text-amber-700" :
-                "bg-emerald-100 text-emerald-700"
-              }`}>
-                <div className={`w-1.5 h-1.5 rounded-full ${
-                  lateRate > 20 ? "bg-rose-500" :
-                  lateRate > 10 ? "bg-amber-500" :
-                  "bg-emerald-500"
-                }`} />
-                <span className="text-[10px] font-medium">
-                  {lateRate > 20 ? "Critique" : lateRate > 10 ? "Attention" : "Stable"}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Timeline des commandes */}
-      {timelineData.length > 0 && (
-        <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-blue-50/30 to-white border border-blue-100">
-          <div className="flex items-center gap-2 mb-4">
-            <CalendarDays className="h-4 w-4 text-blue-500" />
-            <h4 className="text-sm font-semibold text-slate-700">Activité des commandes</h4>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            {timelineData.slice(0, 7).map((item: any, idx: number) => (
-              <div key={idx} className="flex-1 min-w-[60px] text-center group">
-                <div className="text-[10px] font-medium text-slate-500 mb-1">{item.date}</div>
-                <div className="relative h-12 flex items-end justify-center">
-                  <div 
-                    className="w-full max-w-[35px] mx-auto bg-gradient-to-t from-blue-400 to-indigo-400 rounded-lg transition-all duration-500 group-hover:from-blue-500 group-hover:to-indigo-500"
-                    style={{ height: `${Math.min(48, (item.count / Math.max(...timelineData.map((d: any) => d.count))) * 48)}px` }}
-                  >
-                    <div className="absolute -top-5 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <span className="text-xs font-bold text-blue-600">{item.count}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="text-[10px] font-semibold text-slate-600 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  {item.count} cmd
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Résumé des fournisseurs */}
-      {data.recentOrders.length > 0 && (
-        <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-purple-50/30 to-white border border-purple-100">
-          <div className="flex items-center gap-2 mb-4">
-            <Building2 className="h-4 w-4 text-purple-500" />
-            <h4 className="text-sm font-semibold text-slate-700">Top fournisseurs</h4>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            {data.recentOrders.reduce((acc: any, order) => {
-              const supplier = order.supplierName || "Autre";
-              const existing = acc.find((item: any) => item.name === supplier);
-              if (existing) {
-                existing.count++;
-              } else if (acc.length < 4) {
-                acc.push({ name: supplier, count: 1 });
-              }
-              return acc;
-            }, []).map((supplier: any, idx: number) => (
-              <div key={idx} className="group relative overflow-hidden rounded-lg bg-white p-3 border border-slate-100 hover:shadow-md transition-all">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-medium text-slate-600 truncate">{supplier.name}</span>
-                  <Truck className="h-3 w-3 text-slate-400" />
-                </div>
-                <p className="text-lg font-bold text-slate-800">{supplier.count}</p>
-                <div className="mt-1 text-[10px] text-slate-400">
-                  commande(s)
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Tableau des commandes récentes */}
-      <div className="mt-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <div className="p-1 rounded-lg bg-blue-100">
-              <ShoppingCart className="h-3.5 w-3.5 text-blue-600" />
-            </div>
-            <h4 className="text-sm font-semibold text-slate-700">
-              Commandes récentes
-            </h4>
-          </div>
-          <button
-            onClick={() => setExpandedView(!expandedView)}
-            className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors"
-          >
-            {expandedView ? "Voir moins" : "Voir tout"}
-            <ChevronRight className={`h-3.5 w-3.5 transition-transform ${expandedView ? "rotate-90" : ""}`} />
-          </button>
+          ))}
         </div>
 
-        <div className="max-w-full overflow-x-auto rounded-xl border border-slate-100">
-          <Table>
-            <TableHeader className="bg-slate-50/80">
-              <TableRow>
-                <TableCell isHeader className="py-3 text-start text-xs font-semibold text-slate-600">
-                  Commande
-                </TableCell>
-                <TableCell isHeader className="py-3 text-start text-xs font-semibold text-slate-600">
-                  Fournisseur
-                </TableCell>
-                <TableCell isHeader className="py-3 text-start text-xs font-semibold text-slate-600">
-                  Date
-                </TableCell>
-                <TableCell isHeader className="py-3 text-start text-xs font-semibold text-slate-600">
-                  Statut
-                </TableCell>
-              </TableRow>
-            </TableHeader>
-
-            <TableBody className="divide-y divide-slate-100">
-              {data.recentOrders.length === 0 ? (
+        {/* ── Table ── */}
+        <div>
+          <div className="mb-3 flex items-center justify-between">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Commandes récentes</h4>
+            <button
+              onClick={() => setExpanded((v) => !v)}
+              className="flex items-center gap-1 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+            >
+              {expanded ? "Voir moins" : "Voir tout"}
+              <ChevronRight className={`size-3.5 transition-transform ${expanded ? "rotate-90" : ""}`} />
+            </button>
+          </div>
+          <div className="overflow-hidden rounded-2xl border border-slate-100 dark:border-white/8">
+            <Table>
+              <TableHeader className="bg-slate-50 dark:bg-white/[0.03]">
                 <TableRow>
-                  <td colSpan={4} className="py-6 text-sm text-slate-500 text-center">
-                    Aucune commande récente.
-                  </td>
+                  {["Référence", "Fournisseur", "Date", "Statut"].map((h) => (
+                    <TableCell key={h} isHeader className="py-2.5 text-start text-[10px] font-bold uppercase tracking-widest text-slate-400">{h}</TableCell>
+                  ))}
                 </TableRow>
-              ) : (
-                data.recentOrders.slice(0, expandedView ? undefined : 5).map((order) => {
-                  const daysDelay = order.date ? Math.max(0, Math.floor((new Date().getTime() - new Date(order.date).getTime()) / (1000 * 60 * 60 * 24)) - 7) : 0;
-                  const deliveryStatus = order.status === "late" ? getDeliveryStatus(daysDelay) : null;
-                  const DeliveryIcon = deliveryStatus?.icon;
-                  
-                  return (
-                    <TableRow key={order.id} className="hover:bg-slate-50/50 transition-colors">
+              </TableHeader>
+              <TableBody className="divide-y divide-slate-100 dark:divide-white/5">
+                {displayed.length === 0 ? (
+                  <TableRow><td colSpan={4} className="py-8 text-center text-sm text-slate-400">Aucune commande récente.</td></TableRow>
+                ) : (
+                  displayed.map((order) => (
+                    <TableRow key={order.id} className="hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors">
                       <TableCell className="py-3">
-                        <div>
-                          <p className="font-semibold text-sm text-slate-800">
-                            {order.reference}
-                          </p>
-                          <span className="text-xs text-slate-400">
-                            {order.totalLabel ?? "Commande"}
-                          </span>
-                        </div>
+                        <p className="text-xs font-bold text-slate-800 dark:text-white">{order.reference}</p>
+                        <p className="text-[10px] text-slate-400">{order.totalLabel ?? "Commande"}</p>
                       </TableCell>
-
                       <TableCell className="py-3">
                         <div className="flex items-center gap-1.5">
-                          <Building2 className="h-3 w-3 text-slate-400" />
-                          <span className="text-sm text-slate-600">
-                            {order.supplierName ?? "-"}
-                          </span>
+                          <Building2 className="size-3 text-slate-400 shrink-0" />
+                          <span className="text-xs text-slate-600 dark:text-slate-300">{order.supplierName ?? "—"}</span>
                         </div>
                       </TableCell>
-
-                      <TableCell className="py-3">
-                        <div className="flex flex-col">
-                          <span className="text-sm text-slate-600">
-                            {order.date ? new Date(order.date).toLocaleDateString() : "-"}
-                          </span>
-                          {order.status === "late" && deliveryStatus && (
-                            <div className={`flex items-center gap-1 mt-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full w-fit ${deliveryStatus.color}`}>
-                              {DeliveryIcon && <DeliveryIcon className="h-2.5 w-2.5" />}
-                              <span>{deliveryStatus.label}</span>
-                            </div>
-                          )}
-                        </div>
+                      <TableCell className="py-3 text-xs text-slate-500 dark:text-slate-400">
+                        {order.date ? new Date(order.date).toLocaleDateString("fr-FR") : "—"}
                       </TableCell>
-
                       <TableCell className="py-3">
-                        <Badge size="sm" color={statusColor(order.status) as any}>
-                          {getStatusLabel(order.status)}
-                        </Badge>
+                        <Badge size="sm" color={statusColor(order.status) as any}>{getStatusLabel(order.status)}</Badge>
                       </TableCell>
                     </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </div>
-      </div>
 
-      {/* Pied de page */}
-      <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-[10px] text-slate-400">Synchronisation en temps réel</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1">
-            <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-            <span className="text-[10px] text-slate-400">{data.total - data.pending - data.late - data.partiallyReceived} traitées</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <AlertCircle className="h-3 w-3 text-rose-500" />
-            <span className="text-[10px] text-slate-400">{data.late} en retard</span>
-          </div>
+        {/* Footer */}
+        <div className="flex items-center justify-between border-t border-slate-100 dark:border-white/8 pt-3 text-[11px] text-slate-400">
+          <div className="flex items-center gap-1.5"><CheckCircle2 className="size-3 text-emerald-500" />{data.total - data.pending - data.late - data.partiallyReceived} traitées</div>
+          <div className="flex items-center gap-1.5"><AlertCircle className="size-3 text-rose-500" />{data.late} en retard</div>
         </div>
       </div>
     </div>

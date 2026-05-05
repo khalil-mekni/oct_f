@@ -1,396 +1,235 @@
-// ContractsWidget.tsx
 "use client";
 
-import Badge from "../ui/badge/Badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHeader,
-  TableRow,
-} from "../ui/table";
-import { FileText, ShieldAlert, CalendarClock, CircleCheckBig, TrendingUp, AlertCircle, Clock, Building2, ChevronRight } from "lucide-react";
-import { useContractsWidget } from "@/hooks/useContractsWidget";
 import { useState } from "react";
+import Badge from "../ui/badge/Badge";
+import { Table, TableBody, TableCell, TableHeader, TableRow } from "../ui/table";
+import { FileText, ShieldAlert, CircleCheckBig, AlertCircle, Clock, ChevronRight } from "lucide-react";
+import { useContractsWidget } from "@/hooks/useContractsWidget";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
-function statusColor(status: string) {
+/* ─── Helpers ─────────────────────────────────────────────── */
+
+function statusColor(status: string): "success" | "error" | "warning" | "light" {
   switch (status?.toLowerCase()) {
-    case "active":
-    case "actif":
-      return "success";
-    case "expired":
-    case "expire":
-    case "expiré":
-      return "error";
-    case "pending":
-    case "draft":
-    case "brouillon":
-      return "warning";
-    default:
-      return "light";
+    case "active": case "actif":   return "success";
+    case "expired": case "expiré": return "error";
+    case "pending": case "draft": case "brouillon": return "warning";
+    default: return "light";
   }
 }
-
-function getDaysRemaining(endDate: string): { days: number; label: string; color: string } {
-  const today = new Date();
-  const end = new Date(endDate);
-  const diffTime = end.getTime() - today.getTime();
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  
-  if (diffDays < 0) return { days: diffDays, label: "Expiré", color: "text-rose-600 bg-rose-50" };
-  if (diffDays <= 7) return { days: diffDays, label: "Urgent", color: "text-rose-600 bg-rose-50" };
-  if (diffDays <= 30) return { days: diffDays, label: "Proche", color: "text-amber-600 bg-amber-50" };
-  if (diffDays <= 90) return { days: diffDays, label: "Normal", color: "text-emerald-600 bg-emerald-50" };
-  return { days: diffDays, label: "Lointain", color: "text-slate-600 bg-slate-50" };
+function statusLabel(status: string): string {
+  switch (status?.toLowerCase()) {
+    case "active":  return "Actif";
+    case "expired": return "Expiré";
+    case "pending": return "En attente";
+    default:        return status;
+  }
+}
+function getDaysInfo(endDate: string) {
+  const days = Math.ceil((new Date(endDate).getTime() - Date.now()) / 86_400_000);
+  if (days < 0)   return { dot: "bg-rose-500",   text: `${Math.abs(days)}j dépassé` };
+  if (days <= 7)  return { dot: "bg-rose-500",   text: `${days}j` };
+  if (days <= 30) return { dot: "bg-amber-500",  text: `${days}j` };
+  if (days <= 90) return { dot: "bg-emerald-500",text: `${days}j` };
+  return                  { dot: "bg-slate-400",  text: `${days}j` };
 }
 
-function MiniStat({
-  label,
-  value,
-  icon,
-  trend,
-  color = "light",
-}: {
-  label: string;
-  value: string | number;
-  icon: React.ReactNode;
-  trend?: { value: number; isPositive: boolean };
-  color?: "success" | "warning" | "error" | "light";
-}) {
+/* ─── Custom tooltip ──────────────────────────────────────── */
+function CustomTooltip({ active, payload }: any) {
+  if (!active || !payload?.length) return null;
   return (
-    <div className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-white to-slate-50 p-4 shadow-md border border-slate-100 hover:shadow-lg transition-all duration-300">
-      <div className="relative z-10">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">{label}</span>
-          <div className="rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 p-1.5 text-slate-500 group-hover:scale-110 transition-transform">
-            {icon}
-          </div>
-        </div>
-        <div className="flex items-baseline justify-between">
-          <h4 className="text-2xl font-bold text-slate-800">{value}</h4>
-          {trend && (
-            <div className={`flex items-center gap-0.5 text-xs font-medium ${
-              trend.isPositive ? "text-emerald-600" : "text-rose-600"
-            }`}>
-              <TrendingUp className={`h-3 w-3 ${!trend.isPositive && "rotate-180"}`} />
-              <span>{Math.abs(trend.value)}%</span>
-            </div>
-          )}
-        </div>
-        <div className="mt-2">
-          <Badge size="sm" color={color as any}>
-            {label}
-          </Badge>
-        </div>
-      </div>
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+    <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800 px-3 py-2 shadow-xl text-xs">
+      <p style={{ color: payload[0].payload.fill }} className="font-bold">{payload[0].name}</p>
+      <p className="text-slate-600 dark:text-slate-300 font-semibold">{payload[0].value} contrats</p>
     </div>
   );
 }
 
+/* ─── Stat card ────────────────────────────────────────────── */
+function StatCard({ icon: Icon, value, label, color, bg }: {
+  icon: React.ElementType; value: number; label: string; color: string; bg: string;
+}) {
+  return (
+    <div className={`flex items-center gap-3 rounded-xl ${bg} px-4 py-3`}>
+      <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${color} bg-white/30 dark:bg-white/10`}>
+        <Icon className="size-3.5" />
+      </div>
+      <div>
+        <p className={`text-xl font-black tabular-nums ${color}`}>{value}</p>
+        <p className="text-[10px] font-semibold uppercase tracking-wide opacity-60">{label}</p>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Main ─────────────────────────────────────────────────── */
+
 export default function ContractsWidget() {
   const { data, isLoading, isError, error } = useContractsWidget();
-  const [expandedView, setExpandedView] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   if (isLoading) {
     return (
-      <div className="rounded-2xl bg-white p-6 shadow-xl border border-slate-100">
-        <div className="space-y-4 animate-pulse">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-slate-200" />
-            <div className="space-y-2">
-              <div className="h-5 w-32 rounded-lg bg-slate-200" />
-              <div className="h-3 w-48 rounded-lg bg-slate-100" />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-28 rounded-xl bg-slate-100" />
-            ))}
-          </div>
-          <div className="h-64 rounded-xl bg-slate-100" />
-        </div>
+      <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 p-6 animate-pulse">
+        <div className="h-8 w-40 rounded-xl bg-slate-100 dark:bg-white/10 mb-5" />
+        <div className="h-40 rounded-2xl bg-slate-100 dark:bg-white/5 mb-5" />
+        <div className="h-48 rounded-2xl bg-slate-100 dark:bg-white/5" />
       </div>
     );
   }
 
   if (isError || !data) {
     return (
-      <div className="rounded-2xl bg-gradient-to-br from-amber-50 to-amber-100/50 p-6 text-center shadow-lg border border-amber-200">
-        <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-3">
-          <AlertCircle className="h-6 w-6 text-amber-500" />
-        </div>
-        <p className="text-sm font-medium text-amber-600">
-          Erreur chargement des contrats
-        </p>
-        <p className="text-xs text-amber-500/70 mt-1">
-          {error instanceof Error ? error.message : "Erreur inconnue"}
-        </p>
+      <div className="rounded-3xl border border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-950/30 p-8 text-center">
+        <AlertCircle className="mx-auto mb-3 size-10 text-amber-400" />
+        <p className="font-bold text-amber-700 dark:text-amber-400">Erreur de chargement</p>
+        {error instanceof Error && <p className="mt-1 text-sm text-amber-500">{error.message}</p>}
       </div>
     );
   }
 
-  // Calcul des statistiques supplémentaires
-  const activeRate = (data.activeContracts / data.totalContracts) * 100;
-  const expiringRate = (data.expiringSoon / data.totalContracts) * 100;
-  
-  // Données pour la visualisation des échéances
-  const contractsByMonth = data.recentContracts.reduce((acc: any, contract) => {
-    if (contract.endDate) {
-      const month = new Date(contract.endDate).toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' });
-      acc[month] = (acc[month] || 0) + 1;
-    }
-    return acc;
-  }, {});
+  const inactive = data.totalContracts - data.activeContracts;
+  const pieData = [
+    { name: "Actifs",     value: data.activeContracts,  fill: "#6366f1" },
+    { name: "Expirant",   value: data.expiringSoon,      fill: "#f59e0b" },
+    { name: "Alertes",    value: data.contractAlerts,    fill: "#f43f5e" },
+    { name: "Inactifs",   value: Math.max(0, inactive - data.expiringSoon - data.contractAlerts), fill: "#cbd5e1" },
+  ].filter((d) => d.value > 0);
 
-  const timelineData = Object.entries(contractsByMonth).map(([month, count]) => ({ month, count }));
+  const displayed = expanded ? data.recentContracts : data.recentContracts.slice(0, 4);
 
   return (
-    <div className="rounded-2xl bg-gradient-to-br from-white via-slate-50/30 to-white p-6 shadow-xl border border-slate-100">
-      {/* En-tête avec icône animée */}
-      <div className="mb-6">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-xl blur-lg opacity-40" />
-            <div className="relative rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 p-2.5 shadow-md">
-              <FileText className="h-5 w-5 text-white" />
-            </div>
+    <div className="overflow-hidden rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 shadow-sm">
+
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/8 px-6 py-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 shadow-lg shadow-violet-500/30">
+            <FileText className="size-4 text-white" />
           </div>
           <div>
-            <h3 className="text-xl font-bold text-slate-800">
-              Gestion des contrats
-            </h3>
-            <p className="text-sm text-slate-500 mt-0.5">
-              Synthèse complète et suivi des échéances
-            </p>
+            <h3 className="font-bold text-slate-800 dark:text-white">Contrats</h3>
+            <p className="text-xs text-slate-400">Synthèse &amp; suivi des échéances</p>
           </div>
         </div>
+        <span className="rounded-full bg-violet-50 dark:bg-violet-500/10 px-3 py-1 text-[11px] font-bold text-violet-600 dark:text-violet-400">
+          {data.totalContracts} contrats
+        </span>
       </div>
 
-      {/* Cartes statistiques modernisées */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <MiniStat
-          label="Total"
-          value={data.totalContracts}
-          icon={<FileText className="h-4 w-4" />}
-          trend={{ value: 12, isPositive: true }}
-          color="light"
-        />
-        <MiniStat
-          label="Actifs"
-          value={data.activeContracts}
-          icon={<CircleCheckBig className="h-4 w-4" />}
-          trend={{ value: 8, isPositive: true }}
-          color="success"
-        />
-        <MiniStat
-          label="Expiration proche"
-          value={data.expiringSoon}
-          icon={<Clock className="h-4 w-4" />}
-          color={data.expiringSoon > 0 ? "warning" : "success"}
-        />
-        <MiniStat
-          label="Alertes"
-          value={data.contractAlerts}
-          icon={<ShieldAlert className="h-4 w-4" />}
-          color={data.contractAlerts > 0 ? "error" : "success"}
-        />
-      </div>
+      <div className="p-6 space-y-5">
 
-      {/* Section visualisation - Graphique d'échéances et barres de progression */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {/* Barre de progression des contrats actifs */}
-        <div className="rounded-xl bg-white p-4 border border-slate-100 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <div className="p-1 rounded-lg bg-emerald-100">
-                <CircleCheckBig className="h-3.5 w-3.5 text-emerald-600" />
+        {/* Stat cards */}
+        <div className="grid grid-cols-2 gap-3">
+          <StatCard icon={CircleCheckBig} value={data.activeContracts} label="Actifs"       color="text-indigo-600 dark:text-indigo-300"  bg="bg-indigo-50 dark:bg-indigo-500/10" />
+          <StatCard icon={FileText}       value={data.totalContracts}  label="Total"        color="text-slate-600  dark:text-slate-300"   bg="bg-slate-100 dark:bg-white/8" />
+          <StatCard icon={Clock}          value={data.expiringSoon}    label="Expirant"     color="text-amber-600  dark:text-amber-300"   bg="bg-amber-50  dark:bg-amber-500/10" />
+          <StatCard icon={ShieldAlert}    value={data.contractAlerts}  label="Alertes"      color="text-rose-600   dark:text-rose-300"    bg="bg-rose-50   dark:bg-rose-500/10" />
+        </div>
+
+        {/* Donut chart */}
+        {pieData.length > 0 && (
+          <div className="rounded-2xl border border-slate-100 dark:border-white/8 bg-slate-50 dark:bg-white/[0.02] p-4">
+            <h4 className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-400">Répartition des contrats</h4>
+            <div className="flex items-center gap-4">
+              <div className="h-36 w-36 shrink-0">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      cx="50%" cy="50%"
+                      innerRadius={38} outerRadius={58}
+                      paddingAngle={3} dataKey="value"
+                    >
+                      {pieData.map((entry, i) => (
+                        <Cell key={i} fill={entry.fill} />
+                      ))}
+                    </Pie>
+                    <Tooltip content={<CustomTooltip />} />
+                  </PieChart>
+                </ResponsiveContainer>
               </div>
-              <span className="text-xs font-semibold text-slate-700">Taux d'activité</span>
-            </div>
-            <span className="text-sm font-bold text-emerald-600">{activeRate.toFixed(0)}%</span>
-          </div>
-          <div className="relative h-3 overflow-hidden rounded-full bg-slate-100">
-            <div 
-              className="absolute left-0 top-0 h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-500 transition-all duration-1000"
-              style={{ width: `${activeRate}%` }}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/30 animate-pulse" />
-            </div>
-          </div>
-          <div className="flex justify-between mt-2">
-            <span className="text-[10px] text-slate-400">Inactifs: {data.totalContracts - data.activeContracts}</span>
-            <span className="text-[10px] text-slate-400">Actifs: {data.activeContracts}</span>
-          </div>
-        </div>
-
-        {/* Barre de progression des expirations */}
-        <div className="rounded-xl bg-white p-4 border border-slate-100 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <div className="p-1 rounded-lg bg-amber-100">
-                <CalendarClock className="h-3.5 w-3.5 text-amber-600" />
-              </div>
-              <span className="text-xs font-semibold text-slate-700">Expirations proches</span>
-            </div>
-            <span className={`text-sm font-bold ${data.expiringSoon > 0 ? "text-amber-600" : "text-emerald-600"}`}>
-              {expiringRate.toFixed(0)}%
-            </span>
-          </div>
-          <div className="relative h-3 overflow-hidden rounded-full bg-slate-100">
-            <div 
-              className={`absolute left-0 top-0 h-full rounded-full transition-all duration-1000 ${
-                data.expiringSoon > 0 
-                  ? "bg-gradient-to-r from-amber-400 to-orange-500" 
-                  : "bg-gradient-to-r from-emerald-400 to-teal-500"
-              }`}
-              style={{ width: `${expiringRate}%` }}
-            />
-          </div>
-          <div className="flex justify-between mt-2">
-            <span className="text-[10px] text-slate-400">Expirés: {data.contractAlerts}</span>
-            <span className="text-[10px] text-slate-400">Bientôt: {data.expiringSoon}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Timeline des échéances - Nouvelle visualisation */}
-      {timelineData.length > 0 && (
-        <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-slate-50 to-white border border-slate-100">
-          <div className="flex items-center gap-2 mb-4">
-            <CalendarClock className="h-4 w-4 text-slate-500" />
-            <h4 className="text-sm font-semibold text-slate-700">Calendrier des échéances</h4>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            {timelineData.slice(0, 6).map((item: any, idx: number) => (
-              <div key={idx} className="flex-1 min-w-[80px] text-center group">
-                <div className="text-[10px] font-medium text-slate-500 mb-1">{item.month}</div>
-                <div className="relative h-16 flex items-end justify-center">
-                  <div 
-                    className="w-full max-w-[40px] mx-auto bg-gradient-to-t from-indigo-400 to-purple-400 rounded-lg transition-all duration-500 group-hover:from-indigo-500 group-hover:to-purple-500"
-                    style={{ height: `${Math.min(60, (item.count / Math.max(...timelineData.map((d: any) => d.count))) * 60)}px` }}
-                  >
-                    <div className="absolute -top-5 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <span className="text-xs font-bold text-indigo-600">{item.count}</span>
+              <div className="flex-1 space-y-2">
+                {pieData.map((d) => (
+                  <div key={d.name} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: d.fill }} />
+                      <span className="text-xs text-slate-500 dark:text-slate-400">{d.name}</span>
                     </div>
+                    <span className="text-xs font-black tabular-nums text-slate-700 dark:text-slate-200">{d.value}</span>
+                  </div>
+                ))}
+                <div className="pt-2 border-t border-slate-200 dark:border-white/8">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-slate-400">Taux d'activité</span>
+                    <span className="text-[11px] font-black text-indigo-600 dark:text-indigo-400">
+                      {data.totalContracts > 0 ? ((data.activeContracts / data.totalContracts) * 100).toFixed(0) : 0}%
+                    </span>
+                  </div>
+                  <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-200 dark:bg-white/10">
+                    <div
+                      className="h-full rounded-full bg-indigo-500 transition-all duration-700"
+                      style={{ width: `${data.totalContracts > 0 ? (data.activeContracts / data.totalContracts) * 100 : 0}%` }}
+                    />
                   </div>
                 </div>
-                <div className="text-[10px] font-semibold text-slate-600 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  {item.count} contrat(s)
-                </div>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Tableau des contrats récents avec design amélioré */}
-      <div className="mt-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <div className="p-1 rounded-lg bg-indigo-100">
-              <Building2 className="h-3.5 w-3.5 text-indigo-600" />
             </div>
-            <h4 className="text-sm font-semibold text-slate-700">
-              Derniers contrats
-            </h4>
           </div>
-          <button
-            onClick={() => setExpandedView(!expandedView)}
-            className="flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-700 transition-colors"
-          >
-            {expandedView ? "Voir moins" : "Voir tout"}
-            <ChevronRight className={`h-3.5 w-3.5 transition-transform ${expandedView ? "rotate-90" : ""}`} />
-          </button>
-        </div>
+        )}
 
-        <div className="max-w-full overflow-x-auto rounded-xl border border-slate-100">
-          <Table>
-            <TableHeader className="bg-slate-50/80">
-              <TableRow>
-                <TableCell isHeader className="py-3 text-start text-xs font-semibold text-slate-600">
-                  Référence
-                </TableCell>
-                <TableCell isHeader className="py-3 text-start text-xs font-semibold text-slate-600">
-                  Partenaire
-                </TableCell>
-                <TableCell isHeader className="py-3 text-start text-xs font-semibold text-slate-600">
-                  Échéance
-                </TableCell>
-                <TableCell isHeader className="py-3 text-start text-xs font-semibold text-slate-600">
-                  Statut
-                </TableCell>
-              </TableRow>
-            </TableHeader>
-
-            <TableBody className="divide-y divide-slate-100">
-              {data.recentContracts.length === 0 ? (
+        {/* Table */}
+        <div>
+          <div className="mb-3 flex items-center justify-between">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Derniers contrats</h4>
+            <button
+              onClick={() => setExpanded((v) => !v)}
+              className="flex items-center gap-1 text-xs font-bold text-violet-600 dark:text-violet-400 hover:underline"
+            >
+              {expanded ? "Voir moins" : "Voir tout"}
+              <ChevronRight className={`size-3.5 transition-transform ${expanded ? "rotate-90" : ""}`} />
+            </button>
+          </div>
+          <div className="overflow-hidden rounded-2xl border border-slate-100 dark:border-white/8">
+            <Table>
+              <TableHeader className="bg-slate-50 dark:bg-white/[0.03]">
                 <TableRow>
-                  <td colSpan={4} className="py-6 text-sm text-slate-500 text-center">
-                    Aucun contrat récent.
-                  </td>
+                  {["Référence", "Partenaire", "Échéance", "Statut"].map((h) => (
+                    <TableCell key={h} isHeader className="py-2.5 text-start text-[10px] font-bold uppercase tracking-widest text-slate-400">{h}</TableCell>
+                  ))}
                 </TableRow>
-              ) : (
-                data.recentContracts.slice(0, expandedView ? undefined : 5).map((contract) => {
-                  const daysInfo = contract.endDate ? getDaysRemaining(contract.endDate) : null;
-                  return (
-                    <TableRow key={contract.id} className="hover:bg-slate-50/50 transition-colors">
-                      <TableCell className="py-3">
-                        <div>
-                          <p className="font-semibold text-sm text-slate-800">
-                            {contract.reference}
-                          </p>
-                          <span className="text-xs text-slate-400">
-                            {contract.title ?? "Contrat"}
-                          </span>
-                        </div>
-                      </TableCell>
-
-                      <TableCell className="py-3 text-sm text-slate-600">
-                        {contract.partnerName ?? "-"}
-                      </TableCell>
-
-                      <TableCell className="py-3">
-                        {contract.endDate ? (
-                          <div className="flex flex-col">
-                            <span className="text-sm text-slate-600">
-                              {new Date(contract.endDate).toLocaleDateString()}
-                            </span>
-                            {daysInfo && (
-                              <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full mt-1 inline-block w-fit ${daysInfo.color}`}>
-                                {daysInfo.label} ({daysInfo.days}j)
-                              </span>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-sm text-slate-400">-</span>
-                        )}
-                      </TableCell>
-
-                      <TableCell className="py-3">
-                        <Badge size="sm" color={statusColor(contract.status) as any}>
-                          {contract.status === "active" ? "Actif" : 
-                           contract.status === "expired" ? "Expiré" :
-                           contract.status === "pending" ? "En attente" : contract.status}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
-
-      {/* Pied de page avec indicateur de mise à jour */}
-      <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-[10px] text-slate-400">Données en temps réel</span>
-        </div>
-        <div className="text-[10px] text-slate-400">
-          Dernière mise à jour: {new Date().toLocaleTimeString()}
+              </TableHeader>
+              <TableBody className="divide-y divide-slate-100 dark:divide-white/5">
+                {displayed.length === 0 ? (
+                  <TableRow><td colSpan={4} className="py-6 text-center text-xs text-slate-400">Aucun contrat récent.</td></TableRow>
+                ) : (
+                  displayed.map((c) => {
+                    const di = c.endDate ? getDaysInfo(c.endDate) : null;
+                    return (
+                      <TableRow key={c.id} className="hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors">
+                        <TableCell className="py-2.5">
+                          <p className="text-xs font-bold text-slate-800 dark:text-white">{c.reference}</p>
+                          <p className="text-[10px] text-slate-400">{c.title ?? "Contrat"}</p>
+                        </TableCell>
+                        <TableCell className="py-2.5 text-xs text-slate-500 dark:text-slate-400">{c.partnerName ?? "—"}</TableCell>
+                        <TableCell className="py-2.5">
+                          {c.endDate && di ? (
+                            <div className="flex items-center gap-1.5">
+                              <span className={`size-1.5 rounded-full ${di.dot} shrink-0`} />
+                              <span className="text-[10px] text-slate-500 dark:text-slate-400">{di.text}</span>
+                            </div>
+                          ) : <span className="text-xs text-slate-400">—</span>}
+                        </TableCell>
+                        <TableCell className="py-2.5">
+                          <Badge size="sm" color={statusColor(c.status)}>{statusLabel(c.status)}</Badge>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       </div>
     </div>

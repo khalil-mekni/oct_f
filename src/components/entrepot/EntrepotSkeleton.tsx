@@ -1,41 +1,69 @@
+"use client";
+
 export const EntrepotSkeleton = () => (
-  <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-    <div className="border-b border-slate-200 bg-gradient-to-r from-slate-50 to-white px-5 py-4">
-      <div className="flex items-center justify-between">
-        <div className="h-6 w-40 animate-pulse rounded-lg bg-slate-200" />
-        <div className="h-9 w-28 animate-pulse rounded-xl bg-slate-200" />
+  <div className="space-y-0">
+    {[...Array(5)].map((_, i) => (
+      <div
+        key={i}
+        className="grid animate-pulse grid-cols-9 items-center gap-2 border-b border-gray-50 px-6 py-5 last:border-b-0"
+        style={{ animationDelay: `${i * 80}ms` }}
+      >
+        {/* Expand button */}
+        <div className="flex justify-start">
+          <div className="h-8 w-8 rounded-xl bg-gray-100" />
+        </div>
+
+        {/* Nom */}
+        <div className="space-y-1.5">
+          <div className="h-4 w-32 rounded-lg bg-gray-200" />
+          <div className="h-3 w-16 rounded-lg bg-gray-100" />
+        </div>
+
+        {/* Adresse */}
+        <div className="flex items-center gap-2">
+          <div className="h-3.5 w-3.5 shrink-0 rounded-full bg-gray-100" />
+          <div className="h-4 w-40 rounded-lg bg-gray-100" />
+        </div>
+
+        {/* Capacité */}
+        <div className="flex justify-end">
+          <div className="h-4 w-16 rounded-lg bg-gray-200" />
+        </div>
+
+        {/* Stock */}
+        <div className="flex justify-end">
+          <div className="h-4 w-14 rounded-lg bg-gray-100" />
+        </div>
+
+        {/* Barre occupation */}
+        <div className="space-y-1.5">
+          <div className="flex justify-between">
+            <div className="h-3 w-16 rounded bg-gray-100" />
+            <div className="h-3 w-8 rounded bg-gray-100" />
+          </div>
+          <div className="h-1.5 w-full rounded-full bg-gray-100">
+            <div
+              className="h-full rounded-full bg-gray-200"
+              style={{ width: `${20 + i * 15}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Lots badge */}
+        <div className="flex justify-center">
+          <div className="h-6 w-14 rounded-full bg-gray-100" />
+        </div>
+
+        {/* Statut badge */}
+        <div className="flex justify-center">
+          <div className="h-6 w-16 rounded-full bg-gray-100" />
+        </div>
+
+        {/* Action button */}
+        <div className="flex justify-end">
+          <div className="h-8 w-24 rounded-xl bg-gray-100" />
+        </div>
       </div>
-    </div>
-
-    <div className="overflow-x-auto">
-      <table className="min-w-full">
-        <thead className="bg-slate-50">
-          <tr className="border-b border-slate-200">
-            {[...Array(9)].map((_, i) => (
-              <th key={i} className="px-4 py-4">
-                <div className="h-4 w-20 animate-pulse rounded bg-slate-200" />
-              </th>
-            ))}
-          </tr>
-        </thead>
-
-        <tbody>
-          {[...Array(5)].map((_, i) => (
-            <tr key={i} className="border-b border-slate-100">
-              {[...Array(9)].map((_, j) => (
-                <td key={j} className="px-4 py-4">
-                  <div className={`h-5 animate-pulse rounded bg-slate-200 ${
-                    j === 0 ? "w-8" : 
-                    j === 1 ? "w-32" :
-                    j === 2 ? "w-48" :
-                    j === 8 ? "w-24" : "w-16"
-                  }`} />
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    ))}
   </div>
 );

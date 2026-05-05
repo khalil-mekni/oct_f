@@ -10,6 +10,7 @@ import React, { useEffect, useRef, useState } from "react";
 
 const AppHeader: React.FC = () => {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
 
@@ -34,143 +35,231 @@ const AppHeader: React.FC = () => {
         inputRef.current?.focus();
       }
     };
-
     document.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-    };
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white/95 backdrop-blur-sm dark:border-gray-800 dark:bg-gray-900/95">
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between lg:px-6">
-        <div className="flex w-full items-center justify-between gap-3 px-3 py-2.5 border-b border-gray-200 dark:border-gray-800 sm:px-4 lg:border-b-0 lg:px-0 lg:py-3">
-          <div className="flex items-center gap-2 sm:gap-3">
+    <header
+      className="sticky top-0 z-50 w-full"
+      style={{
+        background: "rgba(255,255,255,0.92)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+        borderBottom: "1px solid rgba(0,160,157,0.12)",
+        boxShadow: "0 1px 0 0 rgba(0,0,0,0.04), 0 4px 16px -4px rgba(0,160,157,0.08)",
+      }}
+    >
+      {/* Top accent line */}
+      <div
+        className="absolute top-0 left-0 right-0 h-[2px]"
+        style={{
+          background: "linear-gradient(90deg, #00A09D 0%, #00C9C5 50%, #00A09D 100%)",
+          backgroundSize: "200% 100%",
+          animation: "shimmer 3s ease-in-out infinite",
+        }}
+      />
+
+      <style>{`
+        @keyframes shimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+        @keyframes fadeSlideDown {
+          from { opacity: 0; transform: translateY(-4px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .header-action-btn {
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 38px;
+          height: 38px;
+          border-radius: 10px;
+          border: 1px solid rgba(0,0,0,0.08);
+          background: transparent;
+          color: #64748b;
+          transition: all 0.2s ease;
+          cursor: pointer;
+        }
+        .header-action-btn:hover {
+          background: rgba(0,160,157,0.06);
+          border-color: rgba(0,160,157,0.25);
+          color: #00A09D;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(0,160,157,0.12);
+        }
+        .dark .header-action-btn {
+          border-color: rgba(255,255,255,0.08);
+          color: #94a3b8;
+        }
+        .dark .header-action-btn:hover {
+          background: rgba(0,160,157,0.1);
+          border-color: rgba(0,160,157,0.3);
+          color: #00C9C5;
+        }
+        .search-wrapper input:focus {
+          outline: none;
+        }
+        .mobile-menu-animated {
+          animation: fadeSlideDown 0.2s ease;
+        }
+      `}</style>
+
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between px-4 lg:px-6">
+
+        {/* Main row */}
+        <div className="flex w-full items-center justify-between gap-3 py-3 lg:py-0 lg:h-[60px]">
+
+          {/* Left: Toggle + Logo */}
+          <div className="flex items-center gap-3">
             <button
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 text-gray-600 transition hover:bg-gray-50 hover:text-[#00A09D] dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+              className="header-action-btn"
               onClick={handleToggle}
               aria-label="Toggle Sidebar"
             >
               {isMobileOpen ? (
-                <svg
-                  width="22"
-                  height="22"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                   <path
-                    fillRule="evenodd"
-                    clipRule="evenodd"
-                    d="M6.21967 7.28131C5.92678 6.98841 5.92678 6.51354 6.21967 6.22065C6.51256 5.92775 6.98744 5.92775 7.28033 6.22065L11.999 10.9393L16.7176 6.22078C17.0105 5.92789 17.4854 5.92788 17.7782 6.22078C18.0711 6.51367 18.0711 6.98855 17.7782 7.28144L13.0597 12L17.7782 16.7186C18.0711 17.0115 18.0711 17.4863 17.7782 17.7792C17.4854 18.0721 17.0105 18.0721 16.7176 17.7792L11.999 13.0607L7.28033 17.7794C6.98744 18.0722 6.51256 18.0722 6.21967 17.7794C5.92678 17.4865 5.92678 17.0116 6.21967 16.7187L10.9384 12L6.21967 7.28131Z"
+                    fillRule="evenodd" clipRule="evenodd"
+                    d="M6.22 7.28a1 1 0 011.42-1.42L12 10.94l4.36-4.36a1 1 0 111.42 1.42L13.41 12l4.36 4.36a1 1 0 11-1.42 1.42L12 13.41l-4.36 4.36a1 1 0 11-1.42-1.42L10.59 12 6.22 7.28z"
                     fill="currentColor"
                   />
                 </svg>
               ) : (
-                <svg
-                  width="18"
-                  height="14"
-                  viewBox="0 0 16 12"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    fillRule="evenodd"
-                    clipRule="evenodd"
-                    d="M0.583252 1C0.583252 0.585788 0.919038 0.25 1.33325 0.25H14.6666C15.0808 0.25 15.4166 0.585786 15.4166 1C15.4166 1.41421 15.0808 1.75 14.6666 1.75L1.33325 1.75C0.919038 1.75 0.583252 1.41422 0.583252 1ZM0.583252 11C0.583252 10.5858 0.919038 10.25 1.33325 10.25L14.6666 10.25C15.0808 10.25 15.4166 10.5858 15.4166 11C15.4166 11.4142 15.0808 11.75 14.6666 11.75L1.33325 11.75C0.919038 11.75 0.583252 11.4142 0.583252 11ZM1.33325 5.25C0.919038 5.25 0.583252 5.58579 0.583252 6C0.583252 6.41421 0.919038 6.75 1.33325 6.75L7.99992 6.75C8.41413 6.75 8.74992 6.41421 8.74992 6C8.74992 5.58579 8.41413 5.25 7.99992 5.25L1.33325 5.25Z"
-                    fill="currentColor"
-                  />
+                <svg width="18" height="14" viewBox="0 0 18 14" fill="none">
+                  <path d="M1 1h16M1 7h10M1 13h16" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round"/>
                 </svg>
               )}
             </button>
 
+            {/* Logo — mobile only */}
             <Link href="/" className="flex items-center lg:hidden">
               <Image
-                width={120}
-                height={32}
-                className="h-auto w-auto max-h-9 object-contain dark:hidden"
+                width={110} height={30}
+                className="h-auto w-auto max-h-8 object-contain dark:hidden"
                 src="/images/logo/logooct.png"
-                alt="Logo"
-                priority
+                alt="Logo" priority
               />
               <Image
-                width={120}
-                height={32}
-                className="hidden h-auto w-auto max-h-9 object-contain dark:block"
+                width={110} height={30}
+                className="hidden h-auto w-auto max-h-8 object-contain dark:block"
                 src="/images/logo/logo-dark.svg"
-                alt="Logo"
-                priority
+                alt="Logo" priority
               />
             </Link>
           </div>
 
-          <div className="hidden lg:block">
-            <form>
-              <div className="relative">
-                <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 20 20"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      clipRule="evenodd"
-                      d="M3.04175 9.37363C3.04175 5.87693 5.87711 3.04199 9.37508 3.04199C12.8731 3.04199 15.7084 5.87693 15.7084 9.37363C15.7084 12.8703 12.8731 15.7053 9.37508 15.7053C5.87711 15.7053 3.04175 12.8703 3.04175 9.37363ZM9.37508 1.54199C5.04902 1.54199 1.54175 5.04817 1.54175 9.37363C1.54175 13.6991 5.04902 17.2053 9.37508 17.2053C11.2674 17.2053 13.003 16.5344 14.357 15.4176L17.177 18.238C17.4699 18.5309 17.9448 18.5309 18.2377 18.238C18.5306 17.9451 18.5306 17.4703 18.2377 17.1774L15.418 14.3573C16.5365 13.0033 17.2084 11.2669 17.2084 9.37363C17.2084 5.04817 13.7011 1.54199 9.37508 1.54199Z"
-                      fill="currentColor"
-                    />
-                  </svg>
-                </span>
+          {/* Center: Search bar — desktop */}
+          <div className="hidden lg:flex flex-1 max-w-[480px] mx-6">
+            <div
+              className="search-wrapper relative w-full transition-all duration-300"
+              style={{
+                filter: isSearchFocused
+                  ? "drop-shadow(0 4px 16px rgba(0,160,157,0.18))"
+                  : "none",
+              }}
+            >
+              <span
+                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors duration-200"
+                style={{ color: isSearchFocused ? "#00A09D" : "#94a3b8" }}
+              >
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                  <path
+                    fillRule="evenodd" clipRule="evenodd"
+                    d="M3 9a6 6 0 1110.89 3.477l3.817 3.816a.75.75 0 01-1.06 1.061l-3.817-3.817A6 6 0 013 9zm6-4.5a4.5 4.5 0 100 9 4.5 4.5 0 000-9z"
+                    fill="currentColor"
+                  />
+                </svg>
+              </span>
 
-                <input
-                  ref={inputRef}
-                  type="text"
-                  placeholder="Rechercher un produit, stock, commande..."
-                  className="h-11 w-[280px] rounded-xl border border-gray-200 bg-gray-50 pl-12 pr-14 text-sm text-gray-700 placeholder:text-gray-400 outline-none transition focus:border-[#00A09D] focus:bg-white focus:ring-4 focus:ring-[#00A09D]/10 dark:border-gray-700 dark:bg-gray-800 dark:text-white xl:w-[400px]"
-                />
+              <input
+                ref={inputRef}
+                type="text"
+                placeholder="Rechercher un produit, stock, commande..."
+                onFocus={() => setIsSearchFocused(true)}
+                onBlur={() => setIsSearchFocused(false)}
+                className="h-10 w-full rounded-xl pl-10 pr-16 text-sm text-gray-700 placeholder:text-gray-400 dark:text-white dark:placeholder:text-gray-500"
+                style={{
+                  border: isSearchFocused
+                    ? "1.5px solid rgba(0,160,157,0.6)"
+                    : "1.5px solid rgba(0,0,0,0.09)",
+                  background: isSearchFocused
+                    ? "rgba(255,255,255,1)"
+                    : "rgba(248,250,252,0.8)",
+                  transition: "all 0.2s ease",
+                }}
+              />
 
-                <button
-                  type="button"
-                  className="absolute right-2.5 top-1/2 inline-flex -translate-y-1/2 items-center gap-1 rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs text-gray-500 shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
-                >
-                  <span>⌘</span>
-                  <span>K</span>
-                </button>
-              </div>
-            </form>
+              <kbd
+                className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-0.5 rounded-md px-1.5 py-0.5"
+                style={{
+                  border: "1px solid rgba(0,0,0,0.1)",
+                  background: "rgba(248,250,252,1)",
+                  fontSize: "10px",
+                  color: "#94a3b8",
+                  fontFamily: "system-ui",
+                  letterSpacing: "0.02em",
+                }}
+              >
+                <span>⌘</span><span>K</span>
+              </kbd>
+            </div>
           </div>
 
-          <button
-            onClick={toggleApplicationMenu}
-            className="flex h-10 w-10 items-center justify-center rounded-xl text-gray-700 transition hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800 lg:hidden"
-            aria-label="Open user menu"
-          >
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
+          {/* Right: Actions */}
+          <div className="flex items-center gap-2">
+            {/* Mobile more button */}
+            <button
+              onClick={toggleApplicationMenu}
+              className="header-action-btn lg:hidden"
+              aria-label="Open menu"
             >
-              <path
-                fillRule="evenodd"
-                clipRule="evenodd"
-                d="M5.99902 10.4951C6.82745 10.4951 7.49902 11.1667 7.49902 11.9951V12.0051C7.49902 12.8335 6.82745 13.5051 5.99902 13.5051C5.1706 13.5051 4.49902 12.8335 4.49902 12.0051V11.9951C4.49902 11.1667 5.1706 10.4951 5.99902 10.4951ZM17.999 10.4951C18.8275 10.4951 19.499 11.1667 19.499 11.9951V12.0051C19.499 12.8335 18.8275 13.5051 17.999 13.5051C17.1706 13.5051 16.499 12.8335 16.499 12.0051V11.9951C16.499 11.1667 17.1706 10.4951 17.999 10.4951ZM13.499 11.9951C13.499 11.1667 12.8275 10.4951 11.999 10.4951C11.1706 10.4951 10.499 11.1667 10.499 11.9951V12.0051C10.499 12.8335 11.1706 13.5051 11.999 13.5051C12.8275 13.5051 13.499 12.8335 13.499 12.0051V11.9951Z"
-                fill="currentColor"
-              />
-            </svg>
-          </button>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <circle cx="5" cy="12" r="1.5" fill="currentColor"/>
+                <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+                <circle cx="19" cy="12" r="1.5" fill="currentColor"/>
+              </svg>
+            </button>
+
+            {/* Desktop actions */}
+            <div className="hidden lg:flex items-center gap-2">
+              <ThemeToggleButton />
+              <NotificationDropdown />
+            </div>
+
+            {/* User dropdown — always visible on desktop */}
+            <div className="hidden lg:block">
+              <UserDropdown />
+            </div>
+          </div>
         </div>
 
+        {/* Mobile expanded menu */}
         <div
-          className={`${
-            isApplicationMenuOpen ? "flex" : "hidden"
-          } w-full items-center justify-between gap-3 border-t border-gray-200 px-3 py-3 dark:border-gray-800 sm:px-4 lg:flex lg:w-auto lg:border-t-0 lg:px-0 lg:py-0`}
+          className={`${isApplicationMenuOpen ? "flex mobile-menu-animated" : "hidden"} w-full items-center justify-between gap-3 py-3 lg:hidden`}
+          style={{ borderTop: "1px solid rgba(0,160,157,0.1)" }}
         >
-          <div className="flex items-center gap-2 sm:gap-3">
+          {/* Mobile search */}
+          <div className="flex-1 relative">
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+              <svg width="15" height="15" viewBox="0 0 20 20" fill="none">
+                <path fillRule="evenodd" clipRule="evenodd" d="M3 9a6 6 0 1110.89 3.477l3.817 3.816a.75.75 0 01-1.06 1.061l-3.817-3.817A6 6 0 013 9zm6-4.5a4.5 4.5 0 100 9 4.5 4.5 0 000-9z" fill="currentColor"/>
+              </svg>
+            </span>
+            <input
+              type="text"
+              placeholder="Rechercher..."
+              className="h-9 w-full rounded-lg pl-9 pr-3 text-sm"
+              style={{
+                border: "1.5px solid rgba(0,0,0,0.09)",
+                background: "rgba(248,250,252,0.9)",
+              }}
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
             <ThemeToggleButton />
             <NotificationDropdown />
           </div>

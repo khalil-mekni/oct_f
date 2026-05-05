@@ -6,6 +6,7 @@ export type User = {
   first_name?: string | null;
   last_name?: string | null;
   email: string;
+  email_verified_at?: string | null;
   role: string;
   phone?: string | null;
   birth_date?: string | null;
@@ -47,6 +48,7 @@ const USER_FIELDS = `
   first_name
   last_name
   email
+  email_verified_at
   role
   phone
   birth_date
@@ -158,9 +160,7 @@ export async function verifyEmail(token: string): Promise<string> {
   }).then((d) => d.verifyEmail);
 }
 
-export async function resendVerificationEmail(
-  token?: string
-): Promise<string> {
+export async function resendVerificationEmail(token?: string): Promise<string> {
   return graphqlRequest<{ resendVerificationEmail: string }>(
     RESEND_VERIFICATION_MUTATION,
     {},
@@ -192,7 +192,9 @@ export async function me(token?: string): Promise<User | null> {
 }
 
 export async function logout(token?: string): Promise<boolean> {
-  return graphqlRequest<{ logout: boolean }>(LOGOUT_MUTATION, {}, { token }).then(
-    (d) => d.logout
-  );
+  return graphqlRequest<{ logout: boolean }>(
+    LOGOUT_MUTATION,
+    {},
+    { token }
+  ).then((d) => d.logout);
 }

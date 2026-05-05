@@ -1,31 +1,95 @@
 "use client";
 
 import { useState } from "react";
-import { Building2, MapPin, Layers3, Activity, X, CheckCircle } from "lucide-react";
+import {
+  Building2,
+  MapPin,
+  Layers3,
+  Activity,
+  X,
+  CheckCircle2,
+  Warehouse,
+} from "lucide-react";
 import { Entrepot } from "@/lib/entrepot.api";
 
 interface EntrepotsFormModalProps {
   editing: Entrepot | null;
   onSave: (form: Partial<Entrepot>) => void;
   onClose: () => void;
+  saving?: boolean;
 }
 
-interface InputProps {
+interface InputFieldProps {
   label: string;
   value: string | number | null | undefined;
   onChange: (v: string) => void;
   type?: "text" | "number";
   placeholder?: string;
   icon?: React.ReactNode;
+  required?: boolean;
+}
+
+function Label({
+  icon,
+  children,
+  required,
+}: {
+  icon?: React.ReactNode;
+  children: React.ReactNode;
+  required?: boolean;
+}) {
+  return (
+    <label className="mb-1.5 flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.2em] text-gray-400">
+      {icon && <span className="text-[#00A09D]">{icon}</span>}
+      {children}
+      {required && <span className="text-[#00A09D]">*</span>}
+    </label>
+  );
+}
+
+const inputCls =
+  "w-full rounded-xl border-2 border-gray-100 bg-gray-50 px-4 py-3 text-sm font-bold text-[#1C2434] outline-none transition-all placeholder:text-gray-300 focus:border-[#00A09D]/40 focus:bg-white focus:ring-2 focus:ring-[#00A09D]/10 dark:border-gray-700 dark:bg-gray-800 dark:text-white";
+
+function InputField({
+  label,
+  value,
+  onChange,
+  type = "text",
+  placeholder,
+  icon,
+  required,
+}: InputFieldProps) {
+  return (
+    <div>
+      <Label icon={icon} required={required}>
+        {label}
+      </Label>
+      <div className="relative group">
+        {icon && (
+          <div className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 transition-colors group-focus-within:text-[#00A09D]">
+            {icon}
+          </div>
+        )}
+        <input
+          type={type}
+          value={value ?? ""}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className={`${inputCls} ${icon ? "pl-10" : ""}`}
+        />
+      </div>
+    </div>
+  );
 }
 
 export default function EntrepotsFormModal({
   editing,
   onSave,
   onClose,
+  saving,
 }: EntrepotsFormModalProps) {
   const [form, setForm] = useState<Partial<Entrepot>>(
-    editing || {
+    editing ?? {
       nom: "",
       adresse: "",
       capacite_totale: undefined,
@@ -34,168 +98,199 @@ export default function EntrepotsFormModal({
     }
   );
 
+  const isEditing = !!editing;
+
   return (
-    <div className="fixed inset-0 z-[999] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl animate-in zoom-in-95 duration-200">
-        {/* Header avec gradient */}
-        <div className="relative overflow-hidden bg-gradient-to-r from-[#00A09D] to-[#008784] px-6 py-5">
-          <div className="absolute right-0 top-0 -mr-10 -mt-10 h-32 w-32 rounded-full bg-white/10" />
-          <div className="absolute bottom-0 left-0 -mb-10 -ml-10 h-32 w-32 rounded-full bg-white/10" />
-          
-          <div className="relative flex items-start justify-between gap-4">
+    <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-[#1C2434]/70 backdrop-blur-sm"
+        onClick={() => !saving && onClose()}
+      />
+
+      {/* Modal */}
+      <div className="relative w-full max-w-xl overflow-hidden rounded-3xl bg-white shadow-2xl animate-in zoom-in-95 duration-200 dark:bg-gray-900">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-gray-100 bg-white px-7 py-5 dark:border-gray-800 dark:bg-gray-900">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#00A09D]">
+              <Warehouse size={17} className="text-white" />
+            </div>
             <div>
-              <div className="mb-1 inline-flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-white">
-                Smart Packaging Logistics
-              </div>
-              <h2 className="mt-2 text-2xl font-black tracking-tight text-white">
-                {editing ? "Modifier l'entrepôt" : "Nouvel entrepôt"}
+              <h2 className="text-lg font-[1000] uppercase tracking-tighter text-[#1C2434] dark:text-white">
+                {isEditing ? "Modifier" : "Nouvel entrepôt"}
+                <span className="text-[#00A09D]">.</span>
               </h2>
-              <p className="mt-1 text-sm text-white/80">
-                Renseignez les informations principales de l'entrepôt.
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                {isEditing
+                  ? `Mise à jour de ${editing?.nom ?? "l'entrepôt"}`
+                  : "Renseignez les informations"}
               </p>
             </div>
-
-            <button
-              onClick={onClose}
-              className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white transition hover:bg-white/20 hover:scale-105"
-              aria-label="Fermer"
-            >
-              <X size={18} />
-            </button>
           </div>
-        </div>
 
-        <div className="bg-gradient-to-b from-[#F8FAFC] to-white p-6">
-          <div className="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-lg">
-            <div className="grid grid-cols-1 gap-5">
-              <Input
-                label="Nom de l'entrepôt"
-                value={form.nom}
-                onChange={(v) => setForm({ ...form, nom: v })}
-                placeholder="Ex: Entrepôt Principal"
-                icon={<Building2 size={16} />}
-              />
-
-              <Input
-                label="Adresse / localisation"
-                value={form.adresse}
-                onChange={(v) => setForm({ ...form, adresse: v })}
-                placeholder="Ex: 42 Rue de la Logistique, Tunis"
-                icon={<MapPin size={16} />}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-              <Input
-                label="Capacité totale"
-                type="number"
-                value={form.capacite_totale}
-                onChange={(v) =>
-                  setForm({
-                    ...form,
-                    capacite_totale: v === "" ? null : Number(v),
-                  })
-                }
-                placeholder="Ex: 10000"
-                icon={<Layers3 size={16} />}
-              />
-
-              <Input
-                label="Capacité disponible"
-                type="number"
-                value={form.capacite_disponible}
-                onChange={(v) =>
-                  setForm({
-                    ...form,
-                    capacite_disponible: v === "" ? null : Number(v),
-                  })
-                }
-                placeholder="Ex: 2500"
-                icon={<Layers3 size={16} />}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-              <div className="flex flex-col gap-2">
-                <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-slate-500">
-                  <Activity size={12} />
-                  Statut
-                </label>
-
-                <div className="relative">
-                  <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                    <Activity size={16} />
-                  </div>
-
-                  <select
-                    className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-4 text-sm text-slate-700 outline-none transition-all focus:border-[#00A09D] focus:ring-4 focus:ring-[#00A09D]/20 cursor-pointer"
-                    value={form.statut ?? "ACTIVE"}
-                    onChange={(e) =>
-                      setForm({ ...form, statut: e.target.value })
-                    }
-                  >
-                    <option value="ACTIVE">✅ ACTIVE</option>
-                    <option value="INACTIVE">⭕ INACTIVE</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-col-reverse gap-3 border-t border-slate-200 bg-gradient-to-r from-slate-50 to-white px-6 py-4 sm:flex-row sm:items-center sm:justify-end">
           <button
             type="button"
-            onClick={onClose}
-            className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-600 transition-all hover:bg-slate-50 hover:border-slate-300"
+            onClick={() => !saving && onClose()}
+            className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
+          >
+            <X size={18} className="text-gray-400" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="space-y-5 px-7 py-6">
+          {/* Nom */}
+          <InputField
+            label="Nom de l'entrepôt"
+            value={form.nom}
+            onChange={(v) => setForm({ ...form, nom: v })}
+            placeholder="Ex : Entrepôt Principal Nord"
+            icon={<Building2 size={15} />}
+            required
+          />
+
+          {/* Adresse */}
+          <InputField
+            label="Adresse / Localisation"
+            value={form.adresse}
+            onChange={(v) => setForm({ ...form, adresse: v })}
+            placeholder="Ex : 42 Rue de la Logistique, Tunis"
+            icon={<MapPin size={15} />}
+          />
+
+          {/* Capacités */}
+          <div className="grid grid-cols-2 gap-4">
+            <InputField
+              label="Capacité totale"
+              type="number"
+              value={form.capacite_totale}
+              onChange={(v) =>
+                setForm({
+                  ...form,
+                  capacite_totale: v === "" ? undefined : Number(v),
+                })
+              }
+              placeholder="Ex : 10 000"
+              icon={<Layers3 size={15} />}
+            />
+
+            <InputField
+              label="Capacité disponible"
+              type="number"
+              value={form.capacite_disponible}
+              onChange={(v) =>
+                setForm({
+                  ...form,
+                  capacite_disponible: v === "" ? undefined : Number(v),
+                })
+              }
+              placeholder="Ex : 2 500"
+              icon={<Layers3 size={15} />}
+            />
+          </div>
+
+          {/* Statut */}
+          <div>
+            <Label icon={<Activity size={12} />}>Statut</Label>
+            <div className="flex gap-3">
+              {(["ACTIVE", "INACTIVE"] as const).map((status) => {
+                const isSelected = (form.statut ?? "ACTIVE") === status;
+                return (
+                  <button
+                    key={status}
+                    type="button"
+                    onClick={() => setForm({ ...form, statut: status })}
+                    className={`flex flex-1 items-center justify-center gap-2 rounded-xl border-2 py-2.5 text-[10px] font-black uppercase tracking-widest transition-all ${
+                      isSelected
+                        ? status === "ACTIVE"
+                          ? "border-[#00A09D]/30 bg-[#00A09D]/8 text-[#00A09D]"
+                          : "border-gray-300 bg-gray-100 text-gray-600"
+                        : "border-gray-100 bg-gray-50 text-gray-400 hover:border-gray-200"
+                    }`}
+                  >
+                    <span
+                      className={`h-2 w-2 rounded-full ${
+                        status === "ACTIVE" ? "bg-[#00A09D]" : "bg-gray-400"
+                      } ${isSelected ? "opacity-100" : "opacity-40"}`}
+                    />
+                    {status === "ACTIVE" ? "Actif" : "Inactif"}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Capacity preview bar */}
+          {form.capacite_totale && form.capacite_totale > 0 && (
+            <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-800/50">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                  Aperçu occupation
+                </span>
+                <span className="text-xs font-black text-[#1C2434] dark:text-white">
+                  {form.capacite_disponible
+                    ? Math.round(
+                        ((form.capacite_totale - form.capacite_disponible) /
+                          form.capacite_totale) *
+                          100
+                      )
+                    : 0}
+                  % utilisé
+                </span>
+              </div>
+              <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
+                <div
+                  className="h-full rounded-full bg-[#00A09D] transition-all duration-500"
+                  style={{
+                    width: `${
+                      form.capacite_disponible
+                        ? Math.min(
+                            ((form.capacite_totale - form.capacite_disponible) /
+                              form.capacite_totale) *
+                              100,
+                            100
+                          )
+                        : 0
+                    }%`,
+                  }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between border-t border-gray-100 bg-gray-50/50 px-7 py-4 dark:border-gray-800 dark:bg-gray-900">
+          <button
+            type="button"
+            onClick={() => !saving && onClose()}
+            disabled={saving}
+            className="text-[10px] font-black uppercase tracking-widest text-gray-400 transition-colors hover:text-[#1C2434] disabled:opacity-40 dark:hover:text-white"
           >
             Annuler
           </button>
 
           <button
             type="button"
+            disabled={saving || !form.nom?.trim()}
             onClick={() => onSave(form)}
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#00A09D] to-[#008784] px-6 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg hover:scale-105"
+            className="flex items-center gap-2 rounded-xl bg-[#00A09D] px-6 py-2.5 text-[10px] font-black uppercase tracking-widest text-white shadow-sm transition-all hover:bg-[#1C2434] disabled:opacity-40"
           >
-            <CheckCircle size={16} />
-            Sauvegarder
+            {saving ? (
+              <>
+                <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                Enregistrement...
+              </>
+            ) : (
+              <>
+                <CheckCircle2 size={14} />
+                {isEditing ? "Mettre à jour" : "Créer l'entrepôt"}
+              </>
+            )}
           </button>
         </div>
       </div>
     </div>
   );
 }
-
-const Input = ({
-  label,
-  value,
-  onChange,
-  type = "text",
-  placeholder,
-  icon,
-}: InputProps) => (
-  <div className="flex flex-col gap-2">
-    <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-slate-500">
-      {icon && <span className="text-[#00A09D]">{icon}</span>}
-      {label}
-    </label>
-
-    <div className="relative group">
-      {icon && (
-        <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-[#00A09D]">
-          {icon}
-        </div>
-      )}
-
-      <input
-        type={type}
-        value={value ?? ""}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className={`w-full rounded-xl border border-slate-200 bg-white py-3 text-sm text-slate-700 outline-none transition-all focus:border-[#00A09D] focus:ring-4 focus:ring-[#00A09D]/20 placeholder:text-slate-400 ${
-          icon ? "pl-10" : "pl-4"
-        } pr-4`}
-      />
-    </div>
-  </div>
-);

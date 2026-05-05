@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import {
   Pencil,
   ChevronDown,
@@ -9,6 +9,7 @@ import {
   Package2,
   Warehouse,
   TrendingUp,
+  AlertTriangle,
 } from "lucide-react";
 import type { Entrepot } from "@/lib/entrepot.api";
 
@@ -18,97 +19,83 @@ type Props = {
   highlightedId?: string | number | null;
 };
 
-function formatNumber(value?: number | null) {
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function fmt(value?: number | null) {
   return new Intl.NumberFormat("fr-FR").format(Number(value ?? 0));
 }
 
+function getOccupationRate(cap: number, stock: number): number {
+  if (!cap || cap === 0) return 0;
+  return Math.min((stock / cap) * 100, 100);
+}
+
 function normalizeStatus(statut?: string) {
-  const value = (statut ?? "").toUpperCase();
-  if (value === "ACTIF") return "ACTIVE";
-  if (value === "INACTIF") return "INACTIVE";
-  return value;
+  const v = (statut ?? "").toUpperCase();
+  if (v === "ACTIF") return "ACTIVE";
+  if (v === "INACTIF") return "INACTIVE";
+  return v;
 }
 
-// Calcul du taux d'occupation
-function getOccupationRate(capaciteTotale: number, stockExistant: number): number {
-  if (!capaciteTotale || capaciteTotale === 0) return 0;
-  return (stockExistant / capaciteTotale) * 100;
-}
+// ─── Sub-components ────────────────────────────────────────────────────────────
 
-// Badge statut amélioré
 function StatusBadge({ statut }: { statut?: string }) {
-  const normalized = normalizeStatus(statut);
-  
-  const config = {
-    ACTIVE: {
-      bg: "bg-emerald-50",
-      text: "text-emerald-700",
-      border: "border-emerald-200",
-      dot: "bg-emerald-500",
-      label: "ACTIF",
-    },
-    INACTIVE: {
-      bg: "bg-slate-100",
-      text: "text-slate-600",
-      border: "border-slate-200",
-      dot: "bg-slate-400",
-      label: "INACTIF",
-    },
-  };
-  
-  const style = config[normalized as keyof typeof config] || config.INACTIVE;
-  
+  const status = normalizeStatus(statut);
+  const isActive = status === "ACTIVE";
+
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-bold ${style.bg} ${style.text} ${style.border}`}>
-      <span className={`h-1.5 w-1.5 rounded-full ${style.dot}`} />
-      {style.label}
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[9px] font-black uppercase tracking-widest ${
+        isActive
+          ? "border-[#00A09D]/20 bg-[#00A09D]/8 text-[#00A09D]"
+          : "border-gray-200 bg-gray-100 text-gray-500"
+      }`}
+    >
+      <span
+        className={`h-1.5 w-1.5 rounded-full ${isActive ? "bg-[#00A09D]" : "bg-gray-400"}`}
+      />
+      {isActive ? "Actif" : "Inactif"}
     </span>
   );
 }
 
-// Barre de progression pour le taux d'occupation
 function OccupationBar({ rate }: { rate: number }) {
-  let bgColor = "bg-emerald-500";
-  let bgLight = "bg-emerald-100";
-  
-  if (rate >= 90) {
-    bgColor = "bg-red-500";
-    bgLight = "bg-red-100";
-  } else if (rate >= 70) {
-    bgColor = "bg-amber-500";
-    bgLight = "bg-amber-100";
-  }
-  
+  const color =
+    rate >= 90
+      ? { bar: "bg-red-500", text: "text-red-500", track: "bg-red-50" }
+      : rate >= 70
+        ? { bar: "bg-amber-500", text: "text-amber-600", track: "bg-amber-50" }
+        : { bar: "bg-[#00A09D]", text: "text-[#00A09D]", track: "bg-[#00A09D]/10" };
+
   return (
-    <div className="w-full">
-      <div className="flex items-center justify-between gap-2 text-xs">
-        <span className="font-medium text-slate-500">Occupation</span>
-        <span className={`font-bold ${rate >= 90 ? "text-red-600" : rate >= 70 ? "text-amber-600" : "text-emerald-600"}`}>
+    <div className="w-full min-w-[100px]">
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">
+          Occupation
+        </span>
+        <span className={`font-mono text-[10px] font-black ${color.text}`}>
           {Math.round(rate)}%
         </span>
       </div>
-      <div className={`mt-1 h-1.5 w-full overflow-hidden rounded-full ${bgLight}`}>
+      <div className={`h-1.5 w-full overflow-hidden rounded-full ${color.track}`}>
         <div
-          className={`h-full rounded-full transition-all duration-500 ${bgColor}`}
-          style={{ width: `${Math.min(rate, 100)}%` }}
+          className={`h-full rounded-full transition-all duration-500 ${color.bar}`}
+          style={{ width: `${rate}%` }}
         />
       </div>
     </div>
   );
 }
 
-export function EntrepotsListView({
-  rows,
-  onEdit,
-  highlightedId,
-}: Props) {
+// ─── Main Component ────────────────────────────────────────────────────────────
+
+export function EntrepotsListView({ rows, onEdit, highlightedId }: Props) {
   const [expandedRows, setExpandedRows] = useState<string[]>([]);
 
-  const toggleExpanded = (id: string) => {
+  const toggle = (id: string) =>
     setExpandedRows((prev) =>
-      prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id]
     );
-  };
 
   useEffect(() => {
     if (!highlightedId) return;
@@ -118,254 +105,273 @@ export function EntrepotsListView({
 
   if (!rows.length) {
     return (
-      <div className="flex min-h-[400px] flex-col items-center justify-center p-10 text-center">
-        <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-slate-100 to-slate-200">
-          <Warehouse size={32} className="text-slate-400" />
+      <div className="flex min-h-[300px] flex-col items-center justify-center gap-3 p-12 text-center">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gray-100">
+          <Warehouse size={28} className="text-gray-300" />
         </div>
-        <h3 className="text-lg font-bold text-slate-800">Aucun entrepôt trouvé</h3>
-        <p className="mt-1 text-sm text-slate-500">
-          Aucun résultat ne correspond à votre recherche.
+        <p className="text-sm font-bold uppercase tracking-widest text-gray-400">
+          Aucun entrepôt trouvé
+        </p>
+        <p className="text-xs text-gray-300">
+          Modifiez votre recherche ou créez un nouvel entrepôt.
         </p>
       </div>
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md">
-      <div className="overflow-x-auto">
-        <table className="min-w-full">
-          <thead className="bg-gradient-to-r from-slate-50 to-white">
-            <tr className="border-b border-slate-200">
-              <th className="w-14 px-4 py-4 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
-                Lots
-              </th>
-              <th className="px-4 py-4 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
-                Entrepôt
-              </th>
-              <th className="px-4 py-4 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
-                Adresse
-              </th>
-              <th className="px-4 py-4 text-right text-xs font-bold uppercase tracking-wide text-slate-500">
-                Capacité
-              </th>
-              <th className="px-4 py-4 text-right text-xs font-bold uppercase tracking-wide text-slate-500">
-                Stock
-              </th>
-              <th className="px-4 py-4 text-right text-xs font-bold uppercase tracking-wide text-slate-500">
-                Occupation
-              </th>
-              <th className="px-4 py-4 text-center text-xs font-bold uppercase tracking-wide text-slate-500">
-                Lots
-              </th>
-              <th className="px-4 py-4 text-center text-xs font-bold uppercase tracking-wide text-slate-500">
-                Statut
-              </th>
-              <th className="px-4 py-4 text-right text-xs font-bold uppercase tracking-wide text-slate-500">
-                Actions
-              </th>
-            </tr>
-          </thead>
+    <div className="overflow-x-auto">
+      <table className="min-w-full border-separate border-spacing-0">
+        {/* Head */}
+        <thead>
+          <tr className="border-b border-gray-50 bg-gray-50/50 text-left text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 dark:border-gray-800 dark:bg-gray-800/30">
+            <th className="w-14 px-5 py-4" />
+            <th className="px-5 py-4">Entrepôt</th>
+            <th className="px-5 py-4">Adresse</th>
+            <th className="px-5 py-4 text-right">Capacité</th>
+            <th className="px-5 py-4 text-right">Stock</th>
+            <th className="px-5 py-4">Taux</th>
+            <th className="px-5 py-4 text-center">Lots</th>
+            <th className="px-5 py-4 text-center">Statut</th>
+            <th className="px-5 py-4 text-right">Action</th>
+          </tr>
+        </thead>
 
-          <tbody>
-            {rows.map((item) => {
-              const rowId = String(item.id);
-              const isExpanded = expandedRows.includes(rowId);
-              const lots = item.entrepotLots ?? [];
-              const isHighlighted =
-                highlightedId !== null &&
-                highlightedId !== undefined &&
-                String(item.id) === String(highlightedId);
-              const occupationRate = getOccupationRate(
-                item.capacite_totale || 0,
-                item.stock_existant || 0
-              );
+        <tbody>
+          {rows.map((item) => {
+            const rowId = String(item.id);
+            const isExpanded = expandedRows.includes(rowId);
+            const lots = item.entrepotLots ?? [];
+            const isHighlighted =
+              highlightedId != null && String(item.id) === String(highlightedId);
+            const rate = getOccupationRate(
+              item.capacite_totale ?? 0,
+              item.stock_existant ?? 0
+            );
+            const isCritical = rate >= 90;
 
-              return (
-                <tr
-                  key={item.id}
-                  id={`entrepot-row-${item.id}`}
-                  className={`transition-all duration-200 hover:bg-slate-50/80 ${
-                    isHighlighted ? "bg-amber-50/50" : ""
+            return (
+              <Fragment key={item.id}>
+                {/* ── Main row ── */}
+               <tr
+  id={`entrepot-row-${item.id}`}
+                  className={`group transition-colors hover:bg-gray-50/60 dark:hover:bg-gray-800/30 ${
+                    isHighlighted ? "bg-amber-50/60 dark:bg-amber-900/10" : ""
                   }`}
                 >
-                  <td colSpan={9} className="p-0">
-                    <div className={`border-b border-slate-100 ${isHighlighted ? "ring-2 ring-inset ring-amber-300" : ""}`}>
-                      <div className="grid grid-cols-9 items-center">
-                        {/* Bouton expand */}
-                        <div className="px-4 py-4">
-                          <button
-                            type="button"
-                            onClick={() => toggleExpanded(rowId)}
-                            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition-all hover:border-[#00A09D] hover:bg-[#00A09D]/5 hover:text-[#00A09D] hover:shadow-sm"
-                            aria-label="Afficher les lots"
-                          >
-                            {isExpanded ? (
-                              <ChevronDown size={18} />
-                            ) : (
-                              <ChevronRight size={18} />
-                            )}
-                          </button>
-                        </div>
+                  <td
+                    className={`border-b border-gray-50 px-5 py-4 dark:border-gray-800 ${
+                      isExpanded ? "border-b-0" : ""
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => toggle(rowId)}
+                      className="flex h-8 w-8 items-center justify-center rounded-xl border border-gray-100 bg-white text-gray-400 transition-all hover:border-[#00A09D]/30 hover:bg-[#00A09D]/5 hover:text-[#00A09D] dark:border-gray-700 dark:bg-gray-800"
+                      aria-label="Voir les lots"
+                    >
+                      {isExpanded ? (
+                        <ChevronDown size={14} />
+                      ) : (
+                        <ChevronRight size={14} />
+                      )}
+                    </button>
+                  </td>
 
-                        {/* Nom entrepôt */}
-                        <div className="px-4 py-4">
-                          <div className="flex items-center gap-2">
-                            {isHighlighted && (
-                              <span className="inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-bold uppercase text-amber-700">
-                                Mis en évidence
-                              </span>
-                            )}
-                            <div className="font-semibold text-slate-900">
-                              {item.nom}
-                            </div>
-                          </div>
-                          <div className="mt-0.5 text-xs text-slate-400">
-                            ID: {item.id}
-                          </div>
-                        </div>
-
-                        {/* Adresse */}
-                        <div className="px-4 py-4">
-                          <div className="flex items-start gap-2 text-sm text-slate-600">
-                            <MapPin size={15} className="mt-0.5 flex-shrink-0 text-slate-400" />
-                            <span className="line-clamp-2">{item.adresse || "-"}</span>
-                          </div>
-                        </div>
-
-                        {/* Capacité totale */}
-                        <div className="px-4 py-4 text-right">
-                          <span className="font-semibold text-slate-800">
-                            {formatNumber(item.capacite_totale)}
-                          </span>
-                        </div>
-
-                        {/* Stock existant */}
-                        <div className="px-4 py-4 text-right">
-                          <span className="font-bold text-emerald-700">
-                            {formatNumber(item.stock_existant)}
-                          </span>
-                        </div>
-
-                        {/* Barre d'occupation */}
-                        <div className="px-4 py-4">
-                          <OccupationBar rate={occupationRate} />
-                        </div>
-
-                        {/* Nombre de lots */}
-                        <div className="px-4 py-4 text-center">
-                          <span className="inline-flex min-w-[42px] items-center justify-center gap-1 rounded-full bg-[#00A09D]/10 px-3 py-1 text-xs font-bold text-[#00A09D]">
-                            <Package2 size={12} />
-                            {lots.length}
-                          </span>
-                        </div>
-
-                        {/* Statut */}
-                        <div className="px-4 py-4 text-center">
-                          <StatusBadge statut={item.statut} />
-                        </div>
-
-                        {/* Actions */}
-                        <div className="px-4 py-4 text-right">
-                          <button
-                            onClick={() => onEdit?.(item)}
-                            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:border-[#00A09D]/30 hover:bg-[#00A09D]/5 hover:text-[#00A09D]"
-                          >
-                            <Pencil size={16} />
-                            Modifier
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Section lots expansible */}
-                      {isExpanded && (
-                        <div className="bg-gradient-to-b from-slate-50/70 to-white px-4 pb-5 pt-2">
-                          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                            <div className="flex flex-col gap-3 border-b border-slate-200 bg-gradient-to-r from-slate-50 to-white px-5 py-4 md:flex-row md:items-center md:justify-between">
-                              <div>
-                                <h3 className="flex items-center gap-2 text-sm font-bold text-slate-900">
-                                  <Package2 size={16} className="text-[#00A09D]" />
-                                  Lots présents dans {item.nom}
-                                </h3>
-                                <p className="text-xs text-slate-500">
-                                  Détail du stock existant par lot
-                                </p>
-                              </div>
-
-                              <div className="inline-flex w-fit items-center gap-2 rounded-full bg-gradient-to-r from-[#00A09D]/10 to-[#008784]/10 px-3 py-1 text-xs font-bold text-[#00A09D]">
-                                <Package2 size={14} />
-                                {lots.length} lot(s)
-                              </div>
-                            </div>
-
-                            {lots.length === 0 ? (
-                              <div className="flex flex-col items-center justify-center p-8 text-center">
-                                <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
-                                  <Package2 size={20} className="text-slate-400" />
-                                </div>
-                                <p className="text-sm text-slate-500">
-                                  Aucun lot présent dans cet entrepôt.
-                                </p>
-                              </div>
-                            ) : (
-                              <div className="overflow-x-auto">
-                                <table className="min-w-full">
-                                  <thead className="bg-slate-50">
-                                    <tr className="border-b border-slate-200">
-                                      <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
-                                        Code lot
-                                      </th>
-                                      <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
-                                        Code emballage
-                                      </th>
-                                      <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
-                                        Désignation
-                                      </th>
-                                      <th className="px-5 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500">
-                                        Quantité
-                                      </th>
-                                    </tr>
-                                  </thead>
-
-                                  <tbody>
-                                    {lots.map((lotRow, idx) => (
-                                      <tr
-                                        key={lotRow.id}
-                                        className={`border-b border-slate-100 transition-colors hover:bg-slate-50/50 ${
-                                          idx === lots.length - 1 ? "border-b-0" : ""
-                                        }`}
-                                      >
-                                        <td className="px-5 py-3 font-mono text-sm font-semibold text-slate-900">
-                                          {lotRow.lot?.code_lot ?? "-"}
-                                        </td>
-                                        <td className="px-5 py-3 font-mono text-sm text-slate-700">
-                                          {lotRow.emballage?.code ?? "-"}
-                                        </td>
-                                        <td className="px-5 py-3 text-sm text-slate-600">
-                                          {lotRow.emballage?.name ?? "-"}
-                                        </td>
-                                        <td className="px-5 py-3 text-right">
-                                          <span className="inline-flex items-center gap-1 rounded-full bg-[#00A09D]/10 px-3 py-1 text-sm font-bold text-[#00A09D]">
-                                            <TrendingUp size={12} />
-                                            {formatNumber(lotRow.quantite)}
-                                          </span>
-                                        </td>
-                                      </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
-                              </div>
-                            )}
-                          </div>
-                        </div>
+                  {/* Nom */}
+                  <td
+                    className={`border-b border-gray-50 px-5 py-4 dark:border-gray-800 ${
+                      isExpanded ? "border-b-0" : ""
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      {isHighlighted && (
+                        <span className="rounded-lg bg-amber-100 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-amber-700">
+                          En évidence
+                        </span>
+                      )}
+                      {isCritical && (
+                        <AlertTriangle size={13} className="text-red-400" />
                       )}
                     </div>
+                    <div className="text-sm font-black text-[#1C2434] dark:text-white">
+                      {item.nom}
+                    </div>
+                    <div className="mt-0.5 text-[10px] font-bold text-gray-400">
+                      #{item.id}
+                    </div>
+                  </td>
+
+                  {/* Adresse */}
+                  <td
+                    className={`border-b border-gray-50 px-5 py-4 dark:border-gray-800 ${
+                      isExpanded ? "border-b-0" : ""
+                    }`}
+                  >
+                    <div className="flex items-start gap-1.5 text-sm font-medium text-gray-500">
+                      <MapPin
+                        size={13}
+                        className="mt-0.5 shrink-0 text-gray-300"
+                      />
+                      <span className="line-clamp-2">
+                        {item.adresse || "—"}
+                      </span>
+                    </div>
+                  </td>
+
+                  {/* Capacité */}
+                  <td
+                    className={`border-b border-gray-50 px-5 py-4 text-right dark:border-gray-800 ${
+                      isExpanded ? "border-b-0" : ""
+                    }`}
+                  >
+                    <span className="font-mono text-sm font-black text-[#1C2434] dark:text-white">
+                      {fmt(item.capacite_totale)}
+                    </span>
+                  </td>
+
+                  {/* Stock */}
+                  <td
+                    className={`border-b border-gray-50 px-5 py-4 text-right dark:border-gray-800 ${
+                      isExpanded ? "border-b-0" : ""
+                    }`}
+                  >
+                    <span className="font-mono text-sm font-black text-[#00A09D]">
+                      {fmt(item.stock_existant)}
+                    </span>
+                  </td>
+
+                  {/* Taux */}
+                  <td
+                    className={`border-b border-gray-50 px-5 py-4 dark:border-gray-800 ${
+                      isExpanded ? "border-b-0" : ""
+                    }`}
+                  >
+                    <OccupationBar rate={rate} />
+                  </td>
+
+                  {/* Lots count */}
+                  <td
+                    className={`border-b border-gray-50 px-5 py-4 text-center dark:border-gray-800 ${
+                      isExpanded ? "border-b-0" : ""
+                    }`}
+                  >
+                    <span className="inline-flex items-center gap-1 rounded-lg border border-[#00A09D]/15 bg-[#00A09D]/8 px-2.5 py-1 text-[10px] font-black text-[#00A09D]">
+                      <Package2 size={11} />
+                      {lots.length}
+                    </span>
+                  </td>
+
+                  {/* Statut */}
+                  <td
+                    className={`border-b border-gray-50 px-5 py-4 text-center dark:border-gray-800 ${
+                      isExpanded ? "border-b-0" : ""
+                    }`}
+                  >
+                    <StatusBadge statut={item.statut} />
+                  </td>
+
+                  {/* Action */}
+                  <td
+                    className={`border-b border-gray-50 px-5 py-4 text-right dark:border-gray-800 ${
+                      isExpanded ? "border-b-0" : ""
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => onEdit?.(item)}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-gray-100 bg-white px-3.5 py-2 text-[10px] font-black uppercase tracking-widest text-gray-500 shadow-sm transition-all hover:border-[#00A09D]/20 hover:bg-[#00A09D]/5 hover:text-[#00A09D] dark:border-gray-700 dark:bg-gray-800"
+                    >
+                      <Pencil size={12} />
+                      Modifier
+                    </button>
                   </td>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+
+                {/* ── Expanded lots ── */}
+                {isExpanded && (
+                  <tr key={`${item.id}-lots`}>
+                    <td
+                      colSpan={9}
+                      className="border-b border-gray-50 bg-gray-50/40 px-5 pb-5 pt-0 dark:border-gray-800 dark:bg-gray-800/20"
+                    >
+                      {/* Lot sub-table */}
+                      <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                        {/* Sub header */}
+                        <div className="flex items-center justify-between border-b border-gray-50 px-5 py-3.5 dark:border-gray-800">
+                          <div className="flex items-center gap-2">
+                            <Package2 size={14} className="text-[#00A09D]" />
+                            <span className="text-[10px] font-black uppercase tracking-widest text-[#1C2434] dark:text-white">
+                              Lots dans {item.nom}
+                            </span>
+                          </div>
+                          <span className="rounded-lg bg-gray-100 px-2.5 py-1 text-[10px] font-black text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                            {lots.length} lot{lots.length !== 1 ? "s" : ""}
+                          </span>
+                        </div>
+
+                        {lots.length === 0 ? (
+                          <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
+                            <Package2 size={22} className="text-gray-200" />
+                            <p className="text-xs font-bold uppercase tracking-widest text-gray-400">
+                              Aucun lot dans cet entrepôt
+                            </p>
+                          </div>
+                        ) : (
+                          <table className="min-w-full">
+                            <thead>
+                              <tr className="border-b border-gray-50 bg-gray-50/50 text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 dark:border-gray-800 dark:bg-gray-800/30">
+                                <th className="px-5 py-3 text-left">Code lot</th>
+                                <th className="px-5 py-3 text-left">
+                                  Code emballage
+                                </th>
+                                <th className="px-5 py-3 text-left">
+                                  Désignation
+                                </th>
+                                <th className="px-5 py-3 text-right">
+                                  Quantité
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50 dark:divide-gray-800/60">
+                              {lots.map((lotRow) => (
+                                <tr
+                                  key={lotRow.id}
+                                  className="transition-colors hover:bg-gray-50/50 dark:hover:bg-gray-800/20"
+                                >
+                                  <td className="px-5 py-3">
+                                    <span className="font-mono text-[11px] font-black text-[#1C2434] dark:text-white">
+                                      {lotRow.lot?.code_lot ?? "—"}
+                                    </span>
+                                  </td>
+                                  <td className="px-5 py-3">
+                                    <span className="inline-flex items-center rounded-lg border border-amber-100 bg-amber-50 px-2 py-0.5 font-mono text-[10px] font-black text-amber-700 dark:border-amber-900/30 dark:bg-amber-900/10 dark:text-amber-400">
+                                      {lotRow.emballage?.code ?? "—"}
+                                    </span>
+                                  </td>
+                                  <td className="px-5 py-3 text-sm font-medium text-gray-500">
+                                    {lotRow.emballage?.name ?? "—"}
+                                  </td>
+                                  <td className="px-5 py-3 text-right">
+                                    <span className="inline-flex items-center gap-1 rounded-lg border border-[#00A09D]/15 bg-[#00A09D]/8 px-2.5 py-1 font-mono text-[11px] font-black text-[#00A09D]">
+                                      <TrendingUp size={11} />
+                                      {fmt(lotRow.quantite)}
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                )}
+             </Fragment>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }

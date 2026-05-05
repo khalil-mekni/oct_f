@@ -71,6 +71,7 @@ export type StockMovementStatItem = {
   out_count: number;
   transfer_count: number;
   loss_count: number;
+  split_count: number;
 };
 
 
@@ -150,4 +151,23 @@ export type OrdersWidgetData = {
   partiallyReceived: number;
   late: number;
   recentOrders: OrderWidgetItem[];
+};
+
+
+export type StockArchiveDay = {
+  date: string;
+  entree: number;
+  sortie: number;
+  balance: number;
+};
+
+
+
+export type StockArchiveSummary = {
+  total_in: number;
+  total_out: number;
+  today_in: number;
+  today_out: number;
+  balance: number;
+  days: StockArchiveDay[];
 };
