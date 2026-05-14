@@ -94,7 +94,7 @@ export default function EntrepotsFormModal({
       adresse: "",
       capacite_totale: undefined,
       capacite_disponible: undefined,
-      statut: "ACTIVE",
+      statut: "ACTIf",
     }
   );
 
@@ -194,8 +194,8 @@ export default function EntrepotsFormModal({
           <div>
             <Label icon={<Activity size={12} />}>Statut</Label>
             <div className="flex gap-3">
-              {(["ACTIVE", "INACTIVE"] as const).map((status) => {
-                const isSelected = (form.statut ?? "ACTIVE") === status;
+              {(["ACTIF", "INACTIF"] as const).map((status) => {
+                const isSelected = (form.statut ?? "ACTIF") === status;
                 return (
                   <button
                     key={status}
@@ -203,7 +203,7 @@ export default function EntrepotsFormModal({
                     onClick={() => setForm({ ...form, statut: status })}
                     className={`flex flex-1 items-center justify-center gap-2 rounded-xl border-2 py-2.5 text-[10px] font-black uppercase tracking-widest transition-all ${
                       isSelected
-                        ? status === "ACTIVE"
+                        ? status === "ACTIF"
                           ? "border-[#00A09D]/30 bg-[#00A09D]/8 text-[#00A09D]"
                           : "border-gray-300 bg-gray-100 text-gray-600"
                         : "border-gray-100 bg-gray-50 text-gray-400 hover:border-gray-200"
@@ -211,10 +211,10 @@ export default function EntrepotsFormModal({
                   >
                     <span
                       className={`h-2 w-2 rounded-full ${
-                        status === "ACTIVE" ? "bg-[#00A09D]" : "bg-gray-400"
+                        status === "ACTIF" ? "bg-[#00A09D]" : "bg-gray-400"
                       } ${isSelected ? "opacity-100" : "opacity-40"}`}
                     />
-                    {status === "ACTIVE" ? "Actif" : "Inactif"}
+                    {status === "ACTIF" ? "Actif" : "Inactif"}
                   </button>
                 );
               })}

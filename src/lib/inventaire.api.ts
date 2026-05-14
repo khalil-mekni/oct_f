@@ -59,10 +59,12 @@ const CREATE_INVENTAIRE = `
 export async function createInventaire(
   input: CreateInventaireInput
 ): Promise<StockInventaire> {
-  const data = await graphqlRequest<{ createStockInventaire: StockInventaire }>(
-    CREATE_INVENTAIRE,
-    { input }
-  );
+  const data = await graphqlRequest<{
+    createStockInventaire: StockInventaire;
+  }>(CREATE_INVENTAIRE, {
+    input: cleanInventaireInput(input),
+  });
+
   return data.createStockInventaire;
 }
 
@@ -88,12 +90,19 @@ const UPDATE_INVENTAIRE = `
 
 export async function updateInventaire(
   id: string,
-  input: Partial<StockInventaire>
+  input: Partial<CreateInventaireInput>
 ): Promise<StockInventaire> {
-  const data = await graphqlRequest<{ updateStockInventaire: StockInventaire }>(
-    UPDATE_INVENTAIRE,
-    { id, input }
-  );
+  const cleanInput = {
+    ...input,
+    date_inventaire: toGraphQLDateTime(input.date_inventaire),
+    periode_debut: toGraphQLDateTime(input.periode_debut),
+    periode_fin: toGraphQLDateTime(input.periode_fin),
+  };
+
+  const data = await graphqlRequest<{
+    updateStockInventaire: StockInventaire;
+  }>(UPDATE_INVENTAIRE, { id, input: cleanInput });
+
   return data.updateStockInventaire;
 }
 
@@ -111,4 +120,25 @@ export async function deleteInventaire(id: string): Promise<boolean> {
     { id }
   );
   return !!data.deleteStockInventaire;
+}
+
+function toGraphQLDateTime(value?: string | null): string | undefined {
+  if (!value) return undefined;
+
+  if (value.includes("T")) {
+    return value.length === 16
+      ? `${value}:00`.replace("T", " ")
+      : value.replace("T", " ");
+  }
+
+  return value;
+}
+
+function cleanInventaireInput(input: CreateInventaireInput) {
+  return {
+    ...input,
+    date_inventaire: toGraphQLDateTime(input.date_inventaire)!,
+    periode_debut: toGraphQLDateTime(input.periode_debut),
+    periode_fin: toGraphQLDateTime(input.periode_fin),
+  };
 }

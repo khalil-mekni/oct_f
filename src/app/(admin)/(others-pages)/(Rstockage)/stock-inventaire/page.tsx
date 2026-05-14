@@ -16,6 +16,18 @@ import InventaireCriticalPanel from "@/components/inventaire/InventaireCriticalP
 import InventaireAuditCards from "@/components/inventaire/InventaireAuditCards";
 import InventaireDetailDrawer from "@/components/inventaire/InventaireDetailDrawer";
 import InventaireFormDrawer from "@/components/inventaire/InventaireFormDrawer";
+import { fetchEntrepots } from "@/lib/entrepot.api";
+import { listEmballages } from "@/lib/emballages.api";
+
+const toBackendDateTime = (value?: string | null) => {
+  if (!value) return undefined;
+
+  if (value.includes("T")) {
+    return `${value}:00`.replace("T", " ");
+  }
+
+  return value;
+};
 
 export default function InventairePage() {
   const [data, setData] = useState<TableInventaire[]>([]);
@@ -33,11 +45,41 @@ export default function InventairePage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<TableInventaire | null>(null);
 
+  const [entrepotsOptions, setEntrepotsOptions] = useState<
+    { id: string; label: string }[]
+  >([]);
+
+  const [emballagesOptions, setEmballagesOptions] = useState<
+    { id: string; label: string }[]
+  >([]);
+
   const load = async () => {
     setLoading(true);
+
     try {
-      const res = await listInventaires();
-      setData(res.map(normalizeInventaire));
+      const [inventairesRes, entrepotsRes, emballagesRes] = await Promise.all([
+        listInventaires(),
+        fetchEntrepots(),
+        listEmballages(1, 100),
+      ]);
+
+      setData(inventairesRes.map(normalizeInventaire));
+
+      setEntrepotsOptions(
+        entrepotsRes.map((e) => ({
+          id: String(e.id),
+          label: e.nom,
+        }))
+      );
+
+      setEmballagesOptions(
+        emballagesRes.emballages.data.map((e) => ({
+          id: String(e.id),
+          label: e.name,
+        }))
+      );
+    } catch (error) {
+      console.error("Erreur chargement inventaire:", error);
     } finally {
       setLoading(false);
     }
@@ -64,17 +106,17 @@ export default function InventairePage() {
     }
 
     if (filters.status === "perfect") {
-      rows = rows.filter((r) => r.ecart === 0);
+      rows = rows.filter((r) => Number(r.ecart) === 0);
     } else if (filters.status === "negative") {
-      rows = rows.filter((r) => r.ecart < 0);
+      rows = rows.filter((r) => Number(r.ecart) < 0);
     } else if (filters.status === "positive") {
-      rows = rows.filter((r) => r.ecart > 0);
+      rows = rows.filter((r) => Number(r.ecart) > 0);
     }
 
-    return rows.sort((a, b) => Math.abs(b.ecart) - Math.abs(a.ecart));
+    return rows.sort((a, b) => Math.abs(Number(b.ecart)) - Math.abs(Number(a.ecart)));
   }, [data, filters]);
 
-  const criticalCount = data.filter((i) => Math.abs(i.ecart) > 0).length;
+  const criticalCount = data.filter((i) => Math.abs(Number(i.ecart)) > 0).length;
 
   const handleQuickAdjust = async (id: string, newVal: number) => {
     await updateInventaire(id, { stock_physique: newVal });
@@ -82,30 +124,36 @@ export default function InventairePage() {
   };
 
   const handleCreate = async (payload: any) => {
-    await createInventaire(payload);
+    await createInventaire({
+      ...payload,
+      date_inventaire: toBackendDateTime(payload.date_inventaire)!,
+      periode_debut: toBackendDateTime(payload.periode_debut),
+      periode_fin: toBackendDateTime(payload.periode_fin),
+    });
+
     await load();
   };
 
   const handleEdit = async (payload: any) => {
     if (!editing) return;
-    await updateInventaire(editing.id, payload);
+
+    await updateInventaire(editing.id, {
+      ...payload,
+      date_inventaire: toBackendDateTime(payload.date_inventaire),
+      periode_debut: toBackendDateTime(payload.periode_debut),
+      periode_fin: toBackendDateTime(payload.periode_fin),
+    });
+
     await load();
   };
 
   const handleDelete = async (id: string) => {
     const ok = window.confirm("Supprimer cet inventaire ?");
     if (!ok) return;
+
     await deleteInventaire(id);
     await load();
   };
-
-  const entrepots = Array.from(
-    new Map(data.map((i) => [i.entrepot_id, i.entrepot_name])).entries()
-  ).map(([id, label]) => ({ id, label }));
-
-  const emballages = Array.from(
-    new Map(data.map((i) => [i.emballage_id, i.emballage_name])).entries()
-  ).map(([id, label]) => ({ id, label }));
 
   return (
     <div className="min-h-screen bg-[#F0F2F5] p-6">
@@ -171,8 +219,8 @@ export default function InventairePage() {
         <InventaireFormDrawer
           open={formOpen}
           item={editing}
-          entrepots={entrepots}
-          emballages={emballages}
+          entrepots={entrepotsOptions}
+          emballages={emballagesOptions}
           onClose={() => {
             setFormOpen(false);
             setEditing(null);

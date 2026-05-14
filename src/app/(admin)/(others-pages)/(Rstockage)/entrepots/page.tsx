@@ -90,7 +90,7 @@ export default function EntrepotsPage() {
           nom: formData.nom ?? "",
           adresse: formData.adresse ?? "",
           capacite_totale: Number(formData.capacite_totale ?? 0),
-          statut: formData.statut ?? "ACTIVE",
+          statut: formData.statut ?? "ACTIF",
         });
       }
 

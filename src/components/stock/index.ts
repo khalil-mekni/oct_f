@@ -5,4 +5,3 @@ export { default as StockPagination } from "./Stockpagination";
 export { default as StockStatCards } from "./Stockstatcards";
 export * from "./../../types/stock";
 export * from "./stock.util";
- 

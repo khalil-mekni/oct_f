@@ -32,16 +32,17 @@ function getOccupationRate(cap: number, stock: number): number {
 
 function normalizeStatus(statut?: string) {
   const v = (statut ?? "").toUpperCase();
-  if (v === "ACTIF") return "ACTIVE";
-  if (v === "INACTIF") return "INACTIVE";
+
+  if (v === "ACTIVE") return "ACTIF";
+  if (v === "INACTIVE") return "INACTIF";
+
   return v;
 }
-
 // ─── Sub-components ────────────────────────────────────────────────────────────
 
 function StatusBadge({ statut }: { statut?: string }) {
   const status = normalizeStatus(statut);
-  const isActive = status === "ACTIVE";
+  const isActive = status === "ACTIF";
 
   return (
     <span

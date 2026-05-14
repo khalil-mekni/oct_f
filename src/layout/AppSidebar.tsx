@@ -135,6 +135,20 @@ const navItems: NavItem[] = [
     path: "/profile",
     roles: ["ADMIN", "RESPONSABLE_APPROVISIONNEMENT", "RESPONSABLE_STOCKAGE"],
   },
+
+
+  {
+    icon: <UserCircleIcon />,
+    name: "Predection",
+    path: "/predection",
+    roles: ["ADMIN", "RESPONSABLE_APPROVISIONNEMENT", "RESPONSABLE_STOCKAGE"],
+  },
+  {
+    icon: <UserCircleIcon />,
+    name: "salem",
+    path: "/prediction-emballage",
+    roles: ["ADMIN", "RESPONSABLE_APPROVISIONNEMENT", "RESPONSABLE_STOCKAGE"],
+  },
 ];
 
 const AppSidebar: React.FC = () => {

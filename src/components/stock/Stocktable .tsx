@@ -16,7 +16,7 @@ type Props = {
   onSort: (key: SortKey) => void;
 };
 
-// ─── Grouping logic ────────────────────────────────────────────────────────────
+// ─── Grouping ─────────────────────────────────────────────────────────────────
 
 function groupMovements(items: StockHistoryItem[]): Array<{
   key: string;
@@ -65,7 +65,7 @@ function groupMovements(items: StockHistoryItem[]): Array<{
   return groups;
 }
 
-// ─── Sub-components ────────────────────────────────────────────────────────────
+// ─── Badges & Th helpers ──────────────────────────────────────────────────────
 
 function SensBadge({ sens }: { sens: "E" | "S" }) {
   if (sens === "E") {
@@ -102,9 +102,13 @@ function ThSort({
   return (
     <th
       onClick={() => onSort(key)}
-      className={`select-none cursor-pointer border-b border-gray-50 px-5 py-4 text-[9px] font-black uppercase tracking-[0.2em] transition-colors dark:border-gray-800 ${
+      className={`cursor-pointer select-none border-b border-gray-50 px-5 py-4 text-[9px] font-black uppercase tracking-[0.2em] transition-colors dark:border-gray-800 ${
         align === "right" ? "text-right" : "text-left"
-      } ${active ? "text-[#00A09D]" : "text-gray-400 hover:text-[#1C2434] dark:hover:text-white"}`}
+      } ${
+        active
+          ? "text-[#00A09D]"
+          : "text-gray-400 hover:text-[#1C2434] dark:hover:text-white"
+      }`}
     >
       <span className="inline-flex items-center gap-1.5">
         {children}
@@ -144,7 +148,7 @@ function Th({
   );
 }
 
-// ─── Main Component ────────────────────────────────────────────────────────────
+// ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function StockTable({
   items,
@@ -158,50 +162,52 @@ export default function StockTable({
   const stats = useMemo(() => {
     const entrees = items.filter((i) => i.sens === "E");
     const sorties = items.filter((i) => i.sens === "S");
-    const totalE = entrees.reduce((s, i) => s + Number(i.quantite), 0);
-    const totalS = sorties.reduce((s, i) => s + Number(i.quantite), 0);
-    return { entrees: entrees.length, sorties: sorties.length, totalE, totalS };
+    return {
+      entrees: entrees.length,
+      sorties: sorties.length,
+      totalE: entrees.reduce((s, i) => s + Number(i.quantite), 0),
+      totalS: sorties.reduce((s, i) => s + Number(i.quantite), 0),
+    };
   }, [items]);
 
   return (
-    <div className="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
-      {/* ── Table Header with mini stats ── */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-50 px-6 py-5 dark:border-gray-800">
-        <div className="flex items-center gap-2">
-          <Package size={18} className="text-[#00A09D]" />
-          <h3 className="text-base font-[1000] uppercase tracking-tighter text-[#1C2434] dark:text-white">
-            Historique des stocks<span className="text-[#00A09D]">.</span>
-          </h3>
-          <span className="ml-2 rounded-lg bg-gray-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-gray-500 dark:bg-gray-800 dark:text-gray-400">
-            {items.length}
-          </span>
-        </div>
-
-        {/* Mini stats */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 rounded-xl border border-[#00A09D]/15 bg-[#00A09D]/5 px-4 py-2">
-            <span className="h-2 w-2 rounded-full bg-[#00A09D]" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-[#00A09D]">
-              {stats.entrees} entrée(s)
+    <>
+      {/* Mini stats row — shown only when there are items */}
+      {!loading && items.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3 border-b border-gray-50 px-6 py-3 dark:border-gray-800">
+          <div className="flex items-center gap-1.5">
+            <Package size={13} className="text-gray-400" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+              Page courante :
             </span>
-            <span className="font-mono text-xs font-black text-[#00A09D]">
+            <span className="text-[10px] font-black uppercase tracking-widest text-[#1C2434] dark:text-white">
+              {items.length} ligne{items.length !== 1 ? "s" : ""}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2 rounded-xl border border-[#00A09D]/15 bg-[#00A09D]/5 px-3 py-1">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#00A09D]" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-[#00A09D]">
+              {stats.entrees} entrée{stats.entrees !== 1 ? "s" : ""}
+            </span>
+            <span className="font-mono text-[10px] font-black text-[#00A09D]">
               +{stats.totalE.toLocaleString("fr-FR")}
             </span>
           </div>
 
-          <div className="flex items-center gap-2 rounded-xl border border-red-100 bg-red-50 px-4 py-2">
-            <span className="h-2 w-2 rounded-full bg-red-500" />
+          <div className="flex items-center gap-2 rounded-xl border border-red-100 bg-red-50 px-3 py-1">
+            <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
             <span className="text-[10px] font-black uppercase tracking-widest text-red-500">
-              {stats.sorties} sortie(s)
+              {stats.sorties} sortie{stats.sorties !== 1 ? "s" : ""}
             </span>
-            <span className="font-mono text-xs font-black text-red-500">
+            <span className="font-mono text-[10px] font-black text-red-500">
               -{stats.totalS.toLocaleString("fr-FR")}
             </span>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* ── Table ── */}
+      {/* Table */}
       <div className="overflow-x-auto">
         <table className="min-w-full border-separate border-spacing-0">
           <thead className="bg-gray-50/50 dark:bg-gray-800/30">
@@ -262,11 +268,11 @@ export default function StockTable({
           </tbody>
         </table>
       </div>
-    </div>
+    </>
   );
 }
 
-// ─── GroupRows ─────────────────────────────────────────────────────────────────
+// ─── GroupRows ────────────────────────────────────────────────────────────────
 
 function GroupRows({
   rows,
@@ -283,7 +289,6 @@ function GroupRows({
         const isLast = idx === rows.length - 1;
         const isEntree = item.sens === "E";
 
-        // Border logic: no bottom border on first row of a pair
         const borderClass =
           isPaired && !isLast
             ? "border-b-0"
@@ -296,7 +301,7 @@ function GroupRows({
               isPaired && !isFirst ? "bg-gray-50/20 dark:bg-gray-800/10" : ""
             }`}
           >
-            {/* ── Date ── */}
+            {/* Date */}
             <td className={`px-5 py-3.5 ${borderClass}`}>
               {isFirst || !isPaired ? (
                 <div className="flex flex-col">
@@ -306,7 +311,6 @@ function GroupRows({
                   <span className="text-[10px] font-bold text-gray-400">{time}</span>
                 </div>
               ) : (
-                /* Paired second row: subtle indent marker */
                 <div className="flex items-center gap-2 pl-3">
                   <span className="text-[10px] text-gray-300">↳</span>
                   <span className="text-[10px] font-bold text-gray-300">{time}</span>
@@ -314,7 +318,7 @@ function GroupRows({
               )}
             </td>
 
-            {/* ── Dépôt ── */}
+            {/* Dépôt */}
             <td className={`px-5 py-3.5 ${borderClass}`}>
               <span
                 className={`text-sm font-black leading-snug ${
@@ -327,7 +331,7 @@ function GroupRows({
               </span>
             </td>
 
-            {/* ── Lot ── */}
+            {/* Lot */}
             <td className={`px-5 py-3.5 ${borderClass}`}>
               {item.lot?.code_lot ? (
                 <span className="inline-flex items-center rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1 font-mono text-[10px] font-black text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
@@ -338,7 +342,7 @@ function GroupRows({
               )}
             </td>
 
-            {/* ── Emballage ── */}
+            {/* Emballage */}
             <td className={`px-5 py-3.5 ${borderClass}`}>
               {item.emballage?.code ? (
                 <span className="inline-flex items-center rounded-lg border border-amber-100 bg-amber-50 px-2.5 py-1 font-mono text-[10px] font-black text-amber-700 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-400">
@@ -349,12 +353,12 @@ function GroupRows({
               )}
             </td>
 
-            {/* ── Sens ── */}
+            {/* Sens */}
             <td className={`px-5 py-3.5 text-center ${borderClass}`}>
               <SensBadge sens={item.sens} />
             </td>
 
-            {/* ── Quantité ── */}
+            {/* Quantité */}
             <td className={`px-5 py-3.5 text-right ${borderClass}`}>
               <span
                 className={`font-mono text-base font-[1000] tabular-nums tracking-tight ${
@@ -369,11 +373,13 @@ function GroupRows({
         );
       })}
 
-      {/* ── Visual pair connector ── */}
       {isPaired && (
         <tr aria-hidden className="pointer-events-none">
           <td colSpan={6} className="px-5 py-0">
-            <div className="border-l-2 border-dashed border-gray-100 dark:border-gray-800" style={{ height: "2px", marginLeft: "20px" }} />
+            <div
+              className="border-l-2 border-dashed border-gray-100 dark:border-gray-800"
+              style={{ height: "2px", marginLeft: "20px" }}
+            />
           </td>
         </tr>
       )}

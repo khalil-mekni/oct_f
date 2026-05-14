@@ -10,6 +10,7 @@ export type StockInventaire = {
   user_id?: string | null;
   date_inventaire: string;
   created_at?: string;
+  updated_at?: string;
 
   periode_debut?: string | null;
   periode_fin?: string | null;
@@ -17,12 +18,12 @@ export type StockInventaire = {
   entrepot?: {
     id: string;
     nom: string;
-  };
+  } | null;
 
   emballage?: {
     id: string;
     name: string;
-  };
+  } | null;
 };
 
 export type CreateInventaireInput = {

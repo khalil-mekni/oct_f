@@ -33,8 +33,7 @@ const labelCls =
 const inputCls =
   "w-full rounded-xl border-2 border-gray-100 bg-gray-50 px-3.5 py-2.5 text-sm font-bold text-[#1C2434] outline-none transition-all placeholder:text-gray-300 focus:border-[#00A09D]/30 focus:bg-white focus:ring-2 focus:ring-[#00A09D]/10 dark:border-gray-700 dark:bg-gray-800 dark:text-white";
 
-const selectCls =
-  `${inputCls} cursor-pointer appearance-none pr-9`;
+const selectCls = `${inputCls} cursor-pointer appearance-none pr-9`;
 
 function SelectWrapper({ children }: { children: React.ReactNode }) {
   return (
@@ -83,6 +82,7 @@ export default function StockFiltersPanel({
 }: Props) {
   const [open, setOpen] = useState(true);
 
+  // Deduplicate selects from loaded items
   const entrepots = useMemo(() => {
     const map = new Map<string, string>();
     items.forEach((i) => {
@@ -115,7 +115,9 @@ export default function StockFiltersPanel({
   const hasActiveFilters =
     !!filters.entrepotId ||
     !!filters.lotId ||
-    !!filters.emballageId;
+    !!filters.emballageId ||
+    !!filters.from ||
+    !!filters.to;
 
   return (
     <div className="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
@@ -133,7 +135,10 @@ export default function StockFiltersPanel({
               {resultCount} résultat{resultCount !== 1 ? "s" : ""}
             </span>
             {hasActiveFilters && (
-              <span className="h-2 w-2 rounded-full bg-[#00A09D]" title="Filtres actifs" />
+              <span
+                className="h-2 w-2 rounded-full bg-[#00A09D]"
+                title="Filtres actifs"
+              />
             )}
           </div>
         </div>
@@ -170,6 +175,7 @@ export default function StockFiltersPanel({
       >
         <div className="min-h-0">
           <div className="grid grid-cols-1 gap-4 p-6 sm:grid-cols-2 xl:grid-cols-6">
+
             {/* Entrepôt */}
             <FilterField label="Entrepôt" icon={<Warehouse size={12} />}>
               <SelectWrapper>
@@ -180,9 +186,7 @@ export default function StockFiltersPanel({
                 >
                   <option value="">Tous</option>
                   {entrepots.map(([id, nom]) => (
-                    <option key={id} value={id}>
-                      {nom}
-                    </option>
+                    <option key={id} value={id}>{nom}</option>
                   ))}
                 </select>
               </SelectWrapper>
@@ -198,9 +202,7 @@ export default function StockFiltersPanel({
                 >
                   <option value="">Tous</option>
                   {lots.map(([id, code]) => (
-                    <option key={id} value={id}>
-                      {code}
-                    </option>
+                    <option key={id} value={id}>{code}</option>
                   ))}
                 </select>
               </SelectWrapper>
@@ -216,16 +218,14 @@ export default function StockFiltersPanel({
                 >
                   <option value="">Tous</option>
                   {emballages.map(([id, code]) => (
-                    <option key={id} value={id}>
-                      {code}
-                    </option>
+                    <option key={id} value={id}>{code}</option>
                   ))}
                 </select>
               </SelectWrapper>
             </FilterField>
 
-            {/* Date from */}
-            <FilterField label="Du" icon={<Calendar size={12} />}>
+            {/* Date from — optionnel */}
+            <FilterField label="Du (optionnel)" icon={<Calendar size={12} />}>
               <input
                 type="datetime-local"
                 value={filters.from}
@@ -234,8 +234,8 @@ export default function StockFiltersPanel({
               />
             </FilterField>
 
-            {/* Date to */}
-            <FilterField label="Au" icon={<Calendar size={12} />}>
+            {/* Date to — optionnel */}
+            <FilterField label="Au (optionnel)" icon={<Calendar size={12} />}>
               <input
                 type="datetime-local"
                 value={filters.to}
@@ -244,7 +244,7 @@ export default function StockFiltersPanel({
               />
             </FilterField>
 
-            {/* Apply button */}
+            {/* Apply */}
             <div className="flex items-end">
               <button
                 type="button"
@@ -261,6 +261,16 @@ export default function StockFiltersPanel({
               </button>
             </div>
           </div>
+
+          {/* Helper note about date filters */}
+          {(!filters.from && !filters.to) && (
+            <div className="border-t border-gray-50 px-6 pb-4 dark:border-gray-800">
+              <p className="text-[10px] font-bold text-amber-500">
+                ⚡ Aucune date sélectionnée — tous les mouvements sont affichés.
+                Utilisez les filtres date pour restreindre les résultats.
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
