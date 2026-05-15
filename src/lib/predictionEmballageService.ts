@@ -1,6 +1,7 @@
 export type PredictionPoint = {
   periode: string;
   quantite_predite: number;
+  unite: string;
 };
 
 export type PredictionParams = {
@@ -17,27 +18,27 @@ const GRAPHQL_URL =
 export async function getPredictionEmballage(
   params: PredictionParams
 ): Promise<PredictionPoint[]> {
-  const query = `
-    query PredictionEmballage(
-      $emballage_id: ID!
-      $entrepot_id: ID!
-      $granularity: String
-      $periods: Int
-      $start_date: String
+ const query = `
+  query PredictionEmballage(
+    $emballage_id: ID!
+    $entrepot_id: ID!
+    $granularity: String
+    $periods: Int
+    $start_date: String
+  ) {
+    predictionEmballage(
+      emballage_id: $emballage_id
+      entrepot_id: $entrepot_id
+      granularity: $granularity
+      periods: $periods
+      start_date: $start_date
     ) {
-      predictionEmballage(
-        emballage_id: $emballage_id
-        entrepot_id: $entrepot_id
-        granularity: $granularity
-        periods: $periods
-        start_date: $start_date
-      ) {
-        periode
-        quantite_predite
-      }
+      periode
+      quantite_predite
+      unite
     }
-  `;
-
+  }
+`;
   const response = await fetch(GRAPHQL_URL, {
     method: "POST",
     headers: {

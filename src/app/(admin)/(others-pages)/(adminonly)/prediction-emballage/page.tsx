@@ -68,14 +68,23 @@ function buildRequestForEntrepot(params: FilterParams, entrepotId: number) {
 }
 
 function mergePredictions(allResults: PredictionPoint[][]): PredictionPoint[] {
-  const map = new Map<string, number>();
+  const map = new Map<string, { quantite_predite: number; unite: string }>();
+
   allResults.flat().forEach((item) => {
-    map.set(item.periode, (map.get(item.periode) ?? 0) + Number(item.quantite_predite));
+    const existing = map.get(item.periode);
+
+    map.set(item.periode, {
+      quantite_predite:
+        (existing?.quantite_predite ?? 0) + Number(item.quantite_predite),
+      unite: existing?.unite ?? item.unite ?? "unités",
+    });
   });
+
   return Array.from(map.entries())
-    .map(([periode, quantite_predite]) => ({
+    .map(([periode, value]) => ({
       periode,
-      quantite_predite: Number(quantite_predite.toFixed(2)),
+      quantite_predite: Number(value.quantite_predite.toFixed(2)),
+      unite: value.unite,
     }))
     .sort((a, b) => a.periode.localeCompare(b.periode));
 }
@@ -321,9 +330,9 @@ function PredictionTable({
       {/* ── Top KPI strip ── */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: "Total prévu", value: total, unit: "unités", icon: <Target size={15} />, accent: "text-sky-600", dot: "bg-sky-500" },
-          { label: "Moyenne / période", value: avg, unit: "unités", icon: <BarChart3 size={15} />, accent: "text-teal-600", dot: "bg-teal-500" },
-          { label: "Pic de consommation", value: max, unit: "unités", icon: <TrendingUp size={15} />, accent: "text-emerald-600", dot: "bg-emerald-500" },
+          { label: "Total prévu", value: total, unit: data[0]?.unite || "unités", icon: <Target size={15} />, accent: "text-sky-600", dot: "bg-sky-500" },
+          { label: "Moyenne / période", value: avg, unit: data[0]?.unite || "unités", icon: <BarChart3 size={15} />, accent: "text-teal-600", dot: "bg-teal-500" },
+          { label: "Pic de consommation", value: max, unit: data[0]?.unite || "unités", icon: <TrendingUp size={15} />, accent: "text-emerald-600", dot: "bg-emerald-500" },
         ].map((k, i) => (
           <div key={i} className="relative flex items-center gap-3 overflow-hidden rounded-2xl border border-white/80 bg-white/70 p-4 shadow-sm backdrop-blur-sm">
             <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${k.dot} bg-opacity-15`}>
@@ -428,7 +437,9 @@ function PredictionTable({
                   <p className="text-sm font-black tabular-nums text-slate-900">
                     {item.quantite_predite.toFixed(2)}
                   </p>
-                  <p className="text-[9px] text-slate-400">unités</p>
+                  <p className="text-[9px] text-slate-400">
+  {item.unite || "unités"}
+</p>
                 </div>
 
                 {/* Badge */}
