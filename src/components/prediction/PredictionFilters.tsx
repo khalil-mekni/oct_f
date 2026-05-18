@@ -73,19 +73,21 @@ const MONTHS = [
 const now = new Date();
 const currentYear = now.getFullYear();
 const currentMonth = now.getMonth() + 1;
+const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
+const nextMonthYear = currentMonth === 12 ? currentYear + 1 : currentYear;
 
-const YEARS = Array.from({ length: 8 }, (_, i) => currentYear + i);
+const YEARS = Array.from({ length: 8 }, (_, i) => nextMonthYear + i);
 
 const getAvailableMonths = (year: number) => {
   return MONTHS.map((name, index) => ({
     id: index + 1,
     label: name,
   })).filter((month) => {
-    if (year === currentYear) {
-      return month.id >= currentMonth;
+    if (year === nextMonthYear) {
+      return month.id >= nextMonth;
     }
 
-    return year > currentYear;
+    return year > nextMonthYear;
   });
 };
 const selectCls = `

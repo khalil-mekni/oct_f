@@ -30,6 +30,8 @@ import {
   Zap,
   Target,
 } from "lucide-react";
+import PredictionCostStats from "@/components/prediction/PredictionCostStats";
+import PredictionCostChart from "@/components/prediction/PredictionCostChart";
 
 /* ─────────────────────────────────────────────
    Helpers
@@ -39,8 +41,16 @@ function getDaysInMonth(year: number, month: number) {
 }
 
 function buildRequestForEntrepot(params: FilterParams, entrepotId: number) {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1;
+
+  const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
+  const nextMonthYear = currentMonth === 12 ? currentYear + 1 : currentYear;
+
   if (params.granularity === "day") {
     const month = String(params.selectedMonth).padStart(2, "0");
+
     return {
       emballageId: params.emballageId,
       entrepotId,
@@ -49,26 +59,48 @@ function buildRequestForEntrepot(params: FilterParams, entrepotId: number) {
       startDate: `${params.selectedYear}-${month}-01`,
     };
   }
+
   if (params.granularity === "month") {
+    const startMonth = String(nextMonth).padStart(2, "0");
+
+    const monthsCount =
+      params.selectedYear === nextMonthYear
+        ? 12 - nextMonth + 1
+        : 12;
+
     return {
       emballageId: params.emballageId,
       entrepotId,
       granularity: "month" as const,
-      periods: 12,
-      startDate: `${params.selectedYear}-01-01`,
+      periods: monthsCount,
+      startDate: `${params.selectedYear}-${startMonth}-01`,
     };
   }
+
+  const startMonth = String(nextMonth).padStart(2, "0");
+
+  const periods =
+    (params.toYear - nextMonthYear) * 12 + (12 - nextMonth + 1);
+
   return {
     emballageId: params.emballageId,
     entrepotId,
-    granularity: "year" as const,
-    periods: params.toYear - params.fromYear + 1,
-    startDate: `${params.fromYear}-01-01`,
+    granularity: "month" as const,
+    periods,
+    startDate: `${nextMonthYear}-${startMonth}-01`,
   };
 }
 
 function mergePredictions(allResults: PredictionPoint[][]): PredictionPoint[] {
-  const map = new Map<string, { quantite_predite: number; unite: string }>();
+  const map = new Map<
+    string,
+    {
+      quantite_predite: number;
+      cout_predite: number;
+      unite: string;
+      prix_unitaire: number;
+    }
+  >();
 
   allResults.flat().forEach((item) => {
     const existing = map.get(item.periode);
@@ -76,7 +108,10 @@ function mergePredictions(allResults: PredictionPoint[][]): PredictionPoint[] {
     map.set(item.periode, {
       quantite_predite:
         (existing?.quantite_predite ?? 0) + Number(item.quantite_predite),
+      cout_predite:
+        (existing?.cout_predite ?? 0) + Number(item.cout_predite ?? 0),
       unite: existing?.unite ?? item.unite ?? "unités",
+      prix_unitaire: item.prix_unitaire ?? existing?.prix_unitaire ?? 0,
     });
   });
 
@@ -84,7 +119,9 @@ function mergePredictions(allResults: PredictionPoint[][]): PredictionPoint[] {
     .map(([periode, value]) => ({
       periode,
       quantite_predite: Number(value.quantite_predite.toFixed(2)),
+      cout_predite: Number(value.cout_predite.toFixed(2)),
       unite: value.unite,
+      prix_unitaire: value.prix_unitaire,
     }))
     .sort((a, b) => a.periode.localeCompare(b.periode));
 }
@@ -487,15 +524,18 @@ export default function PredictionEmballagePage() {
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth() + 1;
 
+  const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
+  const nextMonthYear = currentMonth === 12 ? currentYear + 1 : currentYear;
+
   const [params, setParams] = useState<FilterParams>({
-    emballageId: 1,
-    entrepotId: null,
-    granularity: "month",
-    selectedMonth: currentMonth,
-    selectedYear: currentYear,
-    fromYear: currentYear,
-    toYear: currentYear + 3,
-  });
+  emballageId: 1,
+  entrepotId: null,
+  granularity: "month",
+  selectedMonth: nextMonth,
+  selectedYear: nextMonthYear,
+  fromYear: nextMonthYear,
+  toYear: nextMonthYear + 1,
+});
 
   const [data, setData] = useState<PredictionPoint[]>([]);
   const [loading, setLoading] = useState(false);
@@ -661,7 +701,8 @@ export default function PredictionEmballagePage() {
 
               {/* Stats */}
               <PredictionStats data={data} />
-
+               
+              <PredictionCostStats data={data} /> 
               {/* Chart */}
               {data.length > 0 ? (
                 <div className="oct-card overflow-hidden">
@@ -677,6 +718,7 @@ export default function PredictionEmballagePage() {
                       </div>
                     </div>
                     <PredictionChart data={data} granularity={params.granularity} />
+                    <PredictionCostChart data={data} granularity={params.granularity} />
                   </div>
                 </div>
               ) : (

@@ -111,7 +111,7 @@ export default function MouvementsPage() {
       data.sort((a: MouvementStockRow, b: MouvementStockRow) => {
         const ta = new Date(a.date_mouvement ?? 0).getTime();
         const tb = new Date(b.date_mouvement ?? 0).getTime();
-        return sortAsc ? ta - tb : tb - ta;
+         return tb - ta; // plus récent → plus ancien
       });
 
       setItems(data);
@@ -244,7 +244,7 @@ export default function MouvementsPage() {
     result.sort((a, b) => {
       const ta = new Date(a.date_mouvement ?? 0).getTime();
       const tb = new Date(b.date_mouvement ?? 0).getTime();
-      return sortAsc ? ta - tb : tb - ta;
+      return tb - ta;
     });
 
     return result;
@@ -471,6 +471,8 @@ export default function MouvementsPage() {
                             >
                               {item.type_mouvement}
                             </span>
+
+
                             <span className="text-[10px] font-bold text-gray-400">
                               {getTypeLabel(item.type_mouvement)}
                             </span>
@@ -478,14 +480,12 @@ export default function MouvementsPage() {
                         </td>
 
                         {/* Produit */}
-                        <td className="px-4 py-4">
-                          <div className="text-sm font-black leading-snug text-[#1C2434] dark:text-white">
-                            {item.emballage?.code || "—"}
-                          </div>
-                          <div className="text-[10px] font-bold text-gray-400">
-                            {item.emballage?.name || ""}
-                          </div>
-                        </td>
+                        
+<td className="px-4 py-4 min-w-[180px]">
+  <div className="text-sm font-black leading-snug text-[#1C2434] dark:text-white">
+    {item.emballage?.name || "—"}
+  </div>
+</td>
 
                         {/* Lot */}
                         <td className="px-4 py-4">
@@ -495,17 +495,25 @@ export default function MouvementsPage() {
                         </td>
 
                         {/* Source → Destination */}
-                        <td className="px-4 py-4">
-                          <div className="flex items-center gap-1.5">
-                            <span className="max-w-[100px] truncate text-[11px] font-bold text-gray-500">
-                              {item.entrepotSource?.nom || "—"}
-                            </span>
-                            <ChevronRight size={11} className="shrink-0 text-gray-300" />
-                            <span className="max-w-[100px] truncate text-[11px] font-bold text-[#1C2434] dark:text-white">
-                              {item.entrepotDestination?.nom || "—"}
-                            </span>
-                          </div>
-                        </td>
+                        {/* Source → Destination */}
+{/* Source → Destination */}
+<td className="px-4 py-4 min-w-[260px]">
+  <div className="flex flex-col gap-1.5 text-[11px] font-bold leading-tight">
+    <div className="flex items-start gap-2">
+      <span className="w-10 shrink-0 text-gray-400">De :</span>
+      <span className="text-gray-600 dark:text-gray-300">
+        {item.entrepotSource?.nom?.replace("OCT ", "") || "—"}
+      </span>
+    </div>
+
+    <div className="flex items-start gap-2">
+      <span className="w-10 shrink-0 text-gray-400">Vers :</span>
+      <span className="font-black text-[#1C2434] dark:text-white">
+        {item.entrepotDestination?.nom?.replace("OCT ", "") || "—"}
+      </span>
+    </div>
+  </div>
+</td>
 
                         {/* Quantité */}
                         <td className="px-4 py-4 text-center">

@@ -1,7 +1,11 @@
+// src/lib/predictionEmballageService.ts
+
 export type PredictionPoint = {
   periode: string;
   quantite_predite: number;
   unite: string;
+  prix_unitaire: number;
+  cout_predite: number;
 };
 
 export type PredictionParams = {
@@ -18,27 +22,30 @@ const GRAPHQL_URL =
 export async function getPredictionEmballage(
   params: PredictionParams
 ): Promise<PredictionPoint[]> {
- const query = `
-  query PredictionEmballage(
-    $emballage_id: ID!
-    $entrepot_id: ID!
-    $granularity: String
-    $periods: Int
-    $start_date: String
-  ) {
-    predictionEmballage(
-      emballage_id: $emballage_id
-      entrepot_id: $entrepot_id
-      granularity: $granularity
-      periods: $periods
-      start_date: $start_date
+  const query = `
+    query PredictionEmballage(
+      $emballage_id: ID!
+      $entrepot_id: ID
+      $granularity: String
+      $periods: Int
+      $start_date: String
     ) {
-      periode
-      quantite_predite
-      unite
+      predictionEmballage(
+        emballage_id: $emballage_id
+        entrepot_id: $entrepot_id
+        granularity: $granularity
+        periods: $periods
+        start_date: $start_date
+      ) {
+        periode
+        quantite_predite
+        unite
+        prix_unitaire
+        cout_predite
+      }
     }
-  }
-`;
+  `;
+
   const response = await fetch(GRAPHQL_URL, {
     method: "POST",
     headers: {
@@ -64,3 +71,61 @@ export async function getPredictionEmballage(
 
   return json.data.predictionEmballage;
 }
+
+export type AlerteType = "besoin_eleve" | "risque_rupture" | "surstock";
+
+export type DashboardFilters = {
+  annee: number;
+  mois: number;
+  emballage_id: string | null;
+  entrepot_id: string | null;
+};
+
+export type PredictionRequest = {
+  annee: number;
+  mois: number;
+  emballage_id: number;
+  entrepot_id: number;
+  consommation_mois: number;
+};
+
+export type PredictionResponse = {
+  quantite_predite?: number;
+  unite?: string;
+  prix_unitaire?: number;
+  cout_predite?: number;
+
+  prediction?: {
+    quantite_predite: number;
+    unite: string;
+    prix_unitaire?: number;
+    cout_predite?: number;
+  };
+
+  consommation_actuelle?: number;
+};
+
+export type PredictionResult = {
+  emballage_id: number;
+  emballage_name: string;
+  emballage_code: string;
+  entrepot_id: number;
+  entrepot_nom: string;
+  annee: number;
+  mois: number;
+  consommation_actuelle: number;
+  quantite_predite: number;
+  prix_unitaire?: number;
+  cout_predite?: number;
+  ecart: number;
+  pourcentage_evolution: number;
+  statut: "hausse" | "stable" | "baisse";
+  alerte: AlerteType | null;
+};
+
+export type ConsommationMensuelle = {
+  periode: string;
+  mois_label: string;
+  total_sorties: number;
+  total_entrees: number;
+};

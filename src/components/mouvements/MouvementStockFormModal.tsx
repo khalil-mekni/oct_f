@@ -178,9 +178,9 @@ export default function MouvementStockFormModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const showSource = ["CDD", "PTE", "PRD", "SPL"].includes(typeMouvement);
-  const showDestination = ["ENT", "CDD", "SPL"].includes(typeMouvement);
-  const showLot = ["CDD", "PTE", "PRD", "SPL"].includes(typeMouvement);
+const showSource = ["CDD", "PTE", "PRD"].includes(typeMouvement);
+const showDestination = ["ENT", "CDD", "SPL"].includes(typeMouvement);
+const showLot = ["CDD", "PTE", "PRD"].includes(typeMouvement);
 
   useEffect(() => {
     setError("");
@@ -380,14 +380,21 @@ export default function MouvementStockFormModal({
     try {
       setSaving(true);
       await onSave({
-        type_mouvement: typeMouvement,
-        emballage_id: emballageId,
-        lot_id: showLot ? lotId : null,
-        entrepot_source_id: showSource ? entrepotSourceId : null,
-        entrepot_destination_id: showDestination ? entrepotDestinationId : null,
-        quantite: qty,
-        date_mouvement: toGraphqlDateTime(dateMouvement),
-      });
+  type_mouvement: typeMouvement,
+  emballage_id: emballageId,
+
+  // SPL crée un nouveau lot automatiquement côté backend
+  lot_id: showLot ? lotId : null,
+
+  // SPL n'a pas de source
+  entrepot_source_id: showSource ? entrepotSourceId : null,
+
+  // SPL utilise seulement destination = entrepôt où ajouter le surplus
+  entrepot_destination_id: showDestination ? entrepotDestinationId : null,
+
+  quantite: qty,
+  date_mouvement: toGraphqlDateTime(dateMouvement),
+});
     } catch (e: any) {
       setError(e?.message ?? "Erreur lors de la création du brouillon.");
     } finally {
@@ -723,9 +730,11 @@ export default function MouvementStockFormModal({
                   </div>
                   <div className="rounded-xl bg-white/10 p-4">
                     <p className="text-sm font-black">
-                      {showLot
-                        ? selectedLot?.lot?.code_lot ?? "Aucun lot sélectionné"
-                        : "Non applicable"}
+                      {typeMouvement === "SPL"
+  ? "Nouveau lot automatique"
+  : showLot
+    ? selectedLot?.lot?.code_lot ?? "Aucun lot sélectionné"
+    : "Non applicable"}
                     </p>
                     {showLot && quantiteMax > 0 && (
                       <p className="mt-2 text-xs font-bold text-[#00A09D]">
@@ -790,7 +799,7 @@ export default function MouvementStockFormModal({
               ) : (
                 <>
                   <ClipboardCheck size={14} />
-                  Créer le brouillon
+                  {typeMouvement === "SPL" ? "Créer et valider" : "Créer le brouillon"}
                 </>
               )}
             </button>
