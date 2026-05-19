@@ -194,6 +194,32 @@ export default function CommandesTable({
   const [isOcrOpen, setIsOcrOpen] = useState(false);
   const [ocrRawText, setOcrRawText] = useState("");
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    const embId = searchParams.get("emballage_id");
+    const qte = searchParams.get("quantite");
+
+    if (embId && qte) {
+      setForm((prev) => ({
+        ...prev,
+        emballage_id: String(embId),
+        quantite: String(qte),
+        date_livraison_prevue: new Date().toISOString().split("T")[0],
+      }));
+      setIsDrawerOpen(true);
+
+      // Nettoyer l'URL
+      const newParams = new URLSearchParams(searchParams.toString());
+      newParams.delete("emballage_id");
+      newParams.delete("quantite");
+      newParams.delete("prix_unitaire");
+      newParams.delete("cout_estime");
+      const qs = newParams.toString();
+      router.replace(qs ? `?${qs}` : pathname);
+    }
+  }, [searchParams, router, pathname]);
 
   useEffect(() => { setRows(data); }, [data]);
 

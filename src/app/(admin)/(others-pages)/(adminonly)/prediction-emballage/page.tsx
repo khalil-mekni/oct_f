@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import PredictionCostStats from "@/components/prediction/PredictionCostStats";
 import PredictionCostChart from "@/components/prediction/PredictionCostChart";
+import PredictionRecommendation from "@/components/prediction/PredictionRecommendation";
 
 /* ─────────────────────────────────────────────
    Helpers
@@ -99,6 +100,11 @@ function mergePredictions(allResults: PredictionPoint[][]): PredictionPoint[] {
       cout_predite: number;
       unite: string;
       prix_unitaire: number;
+      stock_actuel: number;
+      stock_securite: number;
+      stock_restant_prevu: number;
+      quantite_recommandee: number;
+      cout_recommande: number;
     }
   >();
 
@@ -112,6 +118,11 @@ function mergePredictions(allResults: PredictionPoint[][]): PredictionPoint[] {
         (existing?.cout_predite ?? 0) + Number(item.cout_predite ?? 0),
       unite: existing?.unite ?? item.unite ?? "unités",
       prix_unitaire: item.prix_unitaire ?? existing?.prix_unitaire ?? 0,
+      stock_actuel: (existing?.stock_actuel ?? 0) + Number(item.stock_actuel),
+      stock_securite: (existing?.stock_securite ?? 0) + Number(item.stock_securite),
+      stock_restant_prevu: (existing?.stock_restant_prevu ?? 0) + Number(item.stock_restant_prevu),
+      quantite_recommandee: (existing?.quantite_recommandee ?? 0) + Number(item.quantite_recommandee),
+      cout_recommande: (existing?.cout_recommande ?? 0) + Number(item.cout_recommande),
     });
   });
 
@@ -122,6 +133,12 @@ function mergePredictions(allResults: PredictionPoint[][]): PredictionPoint[] {
       cout_predite: Number(value.cout_predite.toFixed(2)),
       unite: value.unite,
       prix_unitaire: value.prix_unitaire,
+      stock_actuel: Number(value.stock_actuel.toFixed(2)),
+      stock_securite: Number(value.stock_securite.toFixed(2)),
+      stock_restant_prevu: Number(value.stock_restant_prevu.toFixed(2)),
+      quantite_recommandee: Number(value.quantite_recommandee.toFixed(2)),
+      cout_recommande: Number(value.cout_recommande.toFixed(2)),
+      alerte_rupture: value.stock_restant_prevu <= value.stock_securite,
     }))
     .sort((a, b) => a.periode.localeCompare(b.periode));
 }
@@ -706,7 +723,7 @@ export default function PredictionEmballagePage() {
               {/* Chart */}
               {data.length > 0 ? (
                 <div className="oct-card overflow-hidden">
-                  <div className="inset-x-0 top-0 h-[3px] bg-gradient-to-r from-sky-400 via-teal-400 to-emerald-400" />
+                  <div className="inset-x-0 top-0 h-[3px] bg-gradient-to-r from-sky-400 via-teal-400 to-cyan-400" />
                   <div className="p-6">
                     <div className="mb-5 flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-teal-500 shadow-lg shadow-teal-300/30">
@@ -723,6 +740,15 @@ export default function PredictionEmballagePage() {
                 </div>
               ) : (
                 !error && <EmptyState />
+              )}
+
+              {/* Recommendation */}
+              {data.length > 0 && (
+                <PredictionRecommendation 
+                  data={data} 
+                  granularity={params.granularity} 
+                  emballageId={params.emballageId}
+                />
               )}
 
               {/* Prediction detail table */}

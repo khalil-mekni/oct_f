@@ -6,6 +6,12 @@ export type PredictionPoint = {
   unite: string;
   prix_unitaire: number;
   cout_predite: number;
+  stock_actuel: number;
+  stock_securite: number;
+  stock_restant_prevu: number;
+  quantite_recommandee: number;
+  cout_recommande: number;
+  alerte_rupture: boolean;
 };
 
 export type PredictionParams = {
@@ -42,6 +48,12 @@ export async function getPredictionEmballage(
         unite
         prix_unitaire
         cout_predite
+        stock_actuel
+        stock_securite
+        stock_restant_prevu
+        quantite_recommandee
+        cout_recommande
+        alerte_rupture
       }
     }
   `;
