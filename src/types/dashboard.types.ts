@@ -66,12 +66,12 @@ export type RecentMovementItem = {
 };
 
 export type StockMovementStatItem = {
-  label: string;
+  label: String;
   in_count: number;
   out_count: number;
   transfer_count: number;
   loss_count: number;
-  split_count: number;
+  surplus_count: number;
 };
 
 
@@ -107,6 +107,7 @@ export type ContractWidgetItem = {
   reference: string;
   title?: string | null;
   partnerName?: string | null;
+  startDate?: string | null;
   endDate?: string | null;
   status: string;
 };
@@ -126,6 +127,8 @@ export type DeliveryNoteWidgetItem = {
   entrepotName?: string | null;
   date_reception?: string | null;
   statut: string;
+  quantite_commandee?: number;
+  quantite_recue?: number;
 };
 
 export type DeliveryNotesWidgetData = {
@@ -148,7 +151,9 @@ export type OrderWidgetItem = {
 export type OrdersWidgetData = {
   total: number;
   pending: number;
+  validated_count: number;
   partiallyReceived: number;
+  received_count: number;
   late: number;
   recentOrders: OrderWidgetItem[];
 };

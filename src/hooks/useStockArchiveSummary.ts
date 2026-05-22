@@ -7,5 +7,6 @@ export function useStockArchiveSummary() {
   return useQuery({
     queryKey: ["stock-archive-summary"],
     queryFn: fetchStockArchiveSummary,
+    refetchInterval: 30000, // 30 seconds
   });
 }

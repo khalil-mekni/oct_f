@@ -5,45 +5,36 @@ import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import LogisticsMetrics from "@/components/dashboard/LogisticsMetrics";
 import WarehouseOccupancyInteractive from "@/components/dashboard/WarehouseOccupancyInteractive";
 import StockMovementsChart from "@/components/dashboard/StockMovementsChart";
-import ContractsWidget from "@/components/dashboard/ContractsWidget";
-import DeliveryNotesWidget from "@/components/dashboard/DeliveryNotesWidget";
-import OrdersWidget from "@/components/dashboard/OrdersWidget";
-import StockArchiveWidget from "@/components/dashboard/StockArchiveWidget";
 import StockageDashboard from "@/components/dashboard/dashboardRstockage/StockageDashboard";
 import ApprovisionnementDashboard from "@/components/dashboard/dashboardRd'appro/ApprovisionnementDashboard";
+import StockArchiveWidget from "@/components/dashboard/StockArchiveWidget";
+import OrdersFunnelWidget from "@/components/dashboard/OrdersFunnelWidget";
+import ContractsTimelineWidget from "@/components/dashboard/ContractsTimelineWidget";
+import DeliveryQuantitiesWidget from "@/components/dashboard/DeliveryQuantitiesWidget";
 
 // ────────────────────────────────────────────────────────────────
 // Admin layout
 // ────────────────────────────────────────────────────────────────
 function AdminDashboard() {
   return (
-   <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 md:p-6 lg:p-8">
-         <div className="mx-auto max-w-screen-2xl space-y-6">
-   
-           {/* Header full width */}
-           <DashboardHeader />
-   
-           {/* Main grid: Orders takes left half (wider), Contracts + Delivery stacked on right */}
-           <div className="grid grid-cols-1 gap-5 xl:grid-cols-5">
-   
-             {/* Orders — large, left column (3/5) */}
-             <div className="xl:col-span-3">
-               <OrdersWidget />
-             </div>
-   
-             {/* Right column: Contracts on top, Delivery below (2/5) */}
-             <div className="xl:col-span-2 flex flex-col gap-5">
-               <ContractsWidget />
-               <DeliveryNotesWidget />
-             </div>
-           </div>
-         </div>
-       
+    <div className="space-y-6">
+      {/* ── Top Section: Header & Quick Metrics ── */}
+      <DashboardHeader />
+      <LogisticsMetrics />
 
-      {/* Warehouse map — needs all 12 columns */}
+      {/* ── Procurement Workflow (Full Width) ── */}
+      <OrdersFunnelWidget />
+
+      {/* ── Middle Section: Timeline & Quantities ── */}
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <ContractsTimelineWidget />
+        <DeliveryQuantitiesWidget />
+      </div>
+
+      {/* ── Storage Section: Occupancy ── */}
       <WarehouseOccupancyInteractive />
 
-      {/* Movements chart (8) + Archive (4) */}
+      {/* ── Bottom Section: Trends & Archive ── */}
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
         <div className="xl:col-span-8">
           <StockMovementsChart />
@@ -52,8 +43,6 @@ function AdminDashboard() {
           <StockArchiveWidget />
         </div>
       </div>
-
-      
     </div>
   );
 }

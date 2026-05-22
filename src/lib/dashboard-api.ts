@@ -139,6 +139,7 @@ export async function getStockMovementsStats(
         out_count
         transfer_count
         loss_count
+        surplus_count
       }
     }
   `;
@@ -242,6 +243,7 @@ export async function getContractsWidget(): Promise<ContractsWidgetData> {
           reference
           title
           partnerName
+          startDate
           endDate
           status
         }
@@ -268,6 +270,8 @@ export async function getDeliveryNotesWidget(): Promise<DeliveryNotesWidgetData>
           entrepotName
           date_reception
           statut
+          quantite_commandee
+          quantite_recue
         }
       }
     }
@@ -283,7 +287,9 @@ export async function getOrdersWidget(): Promise<OrdersWidgetData> {
       ordersWidget {
         total
         pending
+        validated_count
         partiallyReceived
+        received_count
         late
         recentOrders {
           id

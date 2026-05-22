@@ -3,73 +3,100 @@
 import Link from "next/link";
 import { BellRing, Building2, ArrowRightLeft, LayoutDashboard, TrendingUp, Package, FileText, Truck } from "lucide-react";
 
-/* Accent KPI pill at the top — mimics the big number cards in the reference */
 function AccentKpi({
-  label, value, unit, color, icon: Icon,
+  label, value, unit, bgColor, iconColor, borderColor, barColor, barWidth, icon: Icon,
 }: {
   label: string; value: string; unit?: string;
-  color: string; // gradient classes
+  bgColor: string; iconColor: string; borderColor: string;
+  barColor: string; barWidth: string;
   icon: React.ElementType;
 }) {
   return (
-    <div className={`flex items-center gap-3 rounded-2xl ${color} px-5 py-3.5 shadow-lg`}>
-      <div className="flex flex-col">
-        <span className="text-[10px] font-bold uppercase tracking-widest text-white/70">{label}</span>
-        <div className="flex items-baseline gap-1">
-          <span className="text-2xl font-black tabular-nums text-white">{value}</span>
-          {unit && <span className="text-xs font-semibold text-white/60">{unit}</span>}
-        </div>
+    <div className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-white p-4 transition-colors hover:border-[var(--border-hover)]"
+      style={{ "--border": "rgba(0,0,0,0.08)", "--border-hover": "rgba(0,0,0,0.15)" } as React.CSSProperties}>
+      <div
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border"
+        style={{ background: bgColor, borderColor: borderColor }}
+      >
+        <Icon style={{ color: iconColor }} className="size-5" />
       </div>
-      <Icon className="ml-auto size-7 text-white/40" />
+      <div className="flex-1 min-w-0">
+        <p className="text-[10px] font-medium uppercase tracking-widest text-slate-400">{label}</p>
+        <p className="mt-0.5 text-[22px] font-medium leading-none tracking-tight text-slate-800">
+          {value}
+          {unit && <span className="ml-1 text-[11px] font-medium text-slate-400">{unit}</span>}
+        </p>
+        <div className="mt-2.5 h-[3px] rounded-full" style={{ background: barColor, width: barWidth }} />
+      </div>
     </div>
   );
 }
 
 export default function DashboardHeader() {
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Top bar */}
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 shadow-lg shadow-indigo-500/30">
-            <LayoutDashboard className="size-5 text-white" />
+        {/* Brand */}
+        <div className="flex items-center gap-3.5">
+          <div
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] border"
+            style={{ background: "#e8fafe", borderColor: "#a8f0fc" }}
+          >
+            <LayoutDashboard className="size-5" style={{ color: "#0bbcd9" }} />
           </div>
           <div>
-            <h1 className="text-lg font-black tracking-tight text-slate-800 dark:text-white">
-              Smart Packaging Logistics
+            <h1 className="text-[18px] font-medium tracking-tight text-slate-900 leading-tight">
+              Logistics{" "}
+              <span style={{ color: "#21DAFF" }}>Control Center</span>
             </h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Cockpit logistique · supervision entrepôts, stocks &amp; alertes
+            <p className="mt-0.5 text-[12px] text-slate-400">
+              Pilotage opérationnel des flux et entrepôts
             </p>
           </div>
-          <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-emerald-200 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-400">
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            </span>
-            Opérationnel
-          </span>
+          <div
+            className="ml-2 hidden lg:flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium"
+            style={{ background: "#e6faf4", borderColor: "#8de8c6", color: "#0a7a51" }}
+          >
+            <span
+              className="relative flex h-[7px] w-[7px] rounded-full"
+              style={{ background: "#0FAC71", animation: "pulse 2s infinite" }}
+            />
+            Système en ligne
+          </div>
         </div>
 
+        {/* Actions */}
         <div className="flex items-center gap-2">
           <Link
             href="/notifications"
-            className="relative inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3.5 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 shadow-sm hover:shadow-md transition-all hover:bg-slate-50 dark:hover:bg-white/10"
+            className="relative flex h-9 w-9 items-center justify-center rounded-[10px] border border-slate-200 bg-white text-slate-500 transition-colors hover:bg-slate-50"
           >
-            <BellRing className="size-3.5" />
-            Alertes
-            <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-black text-white">3</span>
+            <BellRing className="size-4" />
+            <span
+              className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full border-[1.5px] border-white text-[9px] font-medium"
+              style={{ background: "#fde8e5", color: "#c4432e" }}
+            >
+              3
+            </span>
           </Link>
+
+          <div className="mx-1 hidden h-6 w-px bg-slate-100 sm:block" />
+
           <Link
             href="/entrepots"
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3.5 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 shadow-sm hover:shadow-md transition-all hover:bg-slate-50 dark:hover:bg-white/10"
+            className="inline-flex items-center gap-1.5 rounded-[10px] border border-slate-200 bg-white px-3 py-2 text-[12px] font-medium text-slate-500 transition-colors hover:bg-slate-50"
           >
             <Building2 className="size-3.5" />
             Entrepôts
           </Link>
+
           <Link
             href="/mouvements"
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-3.5 py-2 text-xs font-bold text-white shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:from-violet-700 hover:to-indigo-700 transition-all"
+            className="inline-flex items-center gap-1.5 rounded-[10px] border px-3.5 py-2 text-[12px] font-medium transition-colors"
+            style={{ background: "#e4fbff", borderColor: "#a8f0fc", color: "#0a9db8" }}
+            onMouseEnter={e => (e.currentTarget.style.background = "#c2f5fd")}
+            onMouseLeave={e => (e.currentTarget.style.background = "#e4fbff")}
           >
             <ArrowRightLeft className="size-3.5" />
             Mouvements
@@ -77,12 +104,36 @@ export default function DashboardHeader() {
         </div>
       </div>
 
-      {/* Accent KPI strip */}
+      {/* KPI strip */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <AccentKpi label="Taux de complétion" value="87" unit="%" color="bg-gradient-to-br from-violet-500 to-purple-600" icon={TrendingUp} />
-        <AccentKpi label="Stock en transit"    value="124" unit="unités" color="bg-gradient-to-br from-cyan-500 to-blue-600" icon={Package} />
-        <AccentKpi label="Contrats actifs"     value="38" unit="contrats" color="bg-gradient-to-br from-pink-500 to-rose-600" icon={FileText} />
-        <AccentKpi label="BL en attente"       value="12" unit="bons" color="bg-gradient-to-br from-amber-500 to-orange-600" icon={Truck} />
+        <AccentKpi
+          label="Taux de complétion"
+          value="87" unit="%"
+          bgColor="#e4fbff" iconColor="#0bbcd9" borderColor="#a8f0fc"
+          barColor="#21DAFF" barWidth="87%"
+          icon={TrendingUp}
+        />
+        <AccentKpi
+          label="Stock en transit"
+          value="124" unit="unités"
+          bgColor="#fdecea" iconColor="#d9553d" borderColor="#f8bdb4"
+          barColor="#F38071" barWidth="62%"
+          icon={Package}
+        />
+        <AccentKpi
+          label="Contrats actifs"
+          value="38" unit="contrats"
+          bgColor="#e6faf4" iconColor="#0a9966" borderColor="#8de8c6"
+          barColor="#0FAC71" barWidth="76%"
+          icon={FileText}
+        />
+        <AccentKpi
+          label="BL en attente"
+          value="12" unit="bons"
+          bgColor="#fefbe8" iconColor="#b8920a" borderColor="#f5e080"
+          barColor="#F8DE65" barWidth="24%"
+          icon={Truck}
+        />
       </div>
     </div>
   );

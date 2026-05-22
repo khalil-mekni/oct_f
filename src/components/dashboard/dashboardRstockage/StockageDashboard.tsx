@@ -3,20 +3,29 @@ import LogisticsMetrics from "../LogisticsMetrics";
 import WarehouseOccupancyInteractive from "../WarehouseOccupancyInteractive";
 import StockMovementsChart from "../StockMovementsChart";
 import StockArchiveWidget from "../StockArchiveWidget";
+import DeliveryQuantitiesWidget from "../DeliveryQuantitiesWidget";
 
 export default function StockageDashboard() {
   return (
     <div className="space-y-6">
-      {/* ── Header ── */}
+      {/* ── Header & Global Metrics ── */}
       <DashboardHeader />
-
-      {/* ── KPI strip ── */}
       <LogisticsMetrics />
 
-      {/* ── Warehouse occupancy — needs full width to breathe ── */}
-      <WarehouseOccupancyInteractive />
+      {/* ── Main Operations Section ── */}
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
+        {/* Occupancy (Left, 8/12) */}
+        <div className="xl:col-span-8">
+           <WarehouseOccupancyInteractive />
+        </div>
+        
+        {/* Delivery Quantities (Right, 4/12) - Relevant for receiving goods */}
+        <div className="xl:col-span-4">
+           <DeliveryQuantitiesWidget />
+        </div>
+      </div>
 
-      {/* ── Chart (8 cols) + Archive (4 cols) ── */}
+      {/* ── Movements & Trends Section ── */}
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
         <div className="xl:col-span-8">
           <StockMovementsChart />
@@ -25,9 +34,6 @@ export default function StockageDashboard() {
           <StockArchiveWidget />
         </div>
       </div>
-
-      {/* ── Timeline — full width ── */}
-  
     </div>
   );
 }

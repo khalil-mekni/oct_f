@@ -53,9 +53,9 @@ function levelStyles(level: WarehouseDetailedItem["level"]) {
 }
 
 const DONUT_COLORS = [
-  "#14B8A6","#38BDF8","#F472B6","#A78BFA","#FBBF24",
-  "#34D399","#FB923C","#818CF8","#F87171","#4ADE80",
-  "#60A5FA","#E879F9","#FACC15","#94A3B8","#F97316",
+  "#6366F1", "#10B981", "#F59E0B", "#F43F5E", "#8B5CF6",
+  "#0EA5E9", "#EC4899", "#14B8A6", "#F97316", "#64748B",
+  "#4F46E5", "#059669", "#D97706", "#DC2626", "#7C3AED",
 ];
 
 export default function WarehouseOccupancyInteractive() {
@@ -73,16 +73,20 @@ export default function WarehouseOccupancyInteractive() {
 
   const active = warehouses.find((w) => w.id === activeId) ?? warehouses[0] ?? null;
 
+  // Each warehouse is a slice
   const donutData = useMemo(() => {
     const top = warehouses.slice(0, 15);
     const rest = warehouses.slice(15);
     const cats = top.map((w) => w.nom);
     const rates = top.map((w) => w.fillRate);
+    const ids = top.map((w) => w.id);
+    
     if (rest.length > 0) {
       cats.push(`Autres (${rest.length})`);
       rates.push(rest.reduce((s, w) => s + w.fillRate, 0) / rest.length);
+      ids.push("others");
     }
-    return { cats, rates, colors: DONUT_COLORS.slice(0, cats.length) };
+    return { cats, rates, ids, colors: DONUT_COLORS.slice(0, cats.length) };
   }, [warehouses]);
 
   const avgFill =
@@ -96,105 +100,83 @@ export default function WarehouseOccupancyInteractive() {
       colors: donutData.colors,
       chart: {
         type: "donut",
-        height: 420,
+        height: 380,
         toolbar: { show: false },
         background: "transparent",
         events: {
           dataPointSelection: (_e, _c, cfg) => {
-            const name = donutData.cats[cfg.dataPointIndex];
-            if (name && !name.includes("Autres")) {
-              const found = warehouses.find((w) => w.nom === name);
-              if (found) setActiveId(found.id);
-            }
+            const id = donutData.ids[cfg.dataPointIndex];
+            if (id && id !== "others") setActiveId(id);
           },
           dataPointMouseEnter: (_e, _c, cfg) => {
-            const name = donutData.cats[cfg.dataPointIndex];
-            if (name && !name.includes("Autres")) {
-              const found = warehouses.find((w) => w.nom === name);
-              if (found) setActiveId(found.id);
-            }
+            const id = donutData.ids[cfg.dataPointIndex];
+            if (id && id !== "others") setActiveId(id);
           },
         },
       },
+      labels: donutData.cats,
       plotOptions: {
         pie: {
           donut: {
-            size: "62%",
+            size: "72%",
             labels: {
               show: true,
               total: {
                 show: true,
-                label: "Moy. occupation",
+                label: "Moyenne",
                 fontSize: "12px",
-                fontWeight: 500,
-                color: isDark ? "#64748B" : "#94A3B8",
+                fontWeight: 600,
+                color: isDark ? "#94A3B8" : "#64748B",
                 formatter: () => `${avgFill.toFixed(1)}%`,
               },
               value: {
-                color: isDark ? "#E2E8F0" : "#1E293B",
-                fontSize: "22px",
-                fontWeight: 700,
+                color: isDark ? "#F8FAFC" : "#0F172A",
+                fontSize: "24px",
+                fontWeight: 800,
               },
             },
           },
-          expandOnClick: true,
         },
       },
       dataLabels: {
         enabled: true,
-        formatter: (_v: number, { seriesIndex }: { seriesIndex: number }) =>
-          `${donutData.rates[seriesIndex].toFixed(0)}%`,
-        style: { fontSize: "10px", fontWeight: 700, colors: ["#fff"] },
-        dropShadow: { enabled: true, top: 1, left: 1, blur: 2, opacity: 0.4 },
+        formatter: (val: number) => `${val.toFixed(0)}%`,
+        style: { fontSize: "10px", fontWeight: 700 },
+        dropShadow: { enabled: false }
       },
       legend: {
         show: true,
         position: "bottom",
         fontSize: "11px",
-        fontFamily: "DM Sans, sans-serif",
+        fontFamily: "Inter, sans-serif",
         fontWeight: 500,
-        labels: { colors: isDark ? "#64748B" : "#94A3B8" },
-        markers: { size: 8, strokeWidth: 0, shape: "circle" },
-        itemMargin: { horizontal: 6, vertical: 5 },
-        formatter: (name: string, opts: any) =>
-          `${name} · ${donutData.rates[opts.seriesIndex].toFixed(1)}%`,
+        labels: { colors: isDark ? "#94A3B8" : "#475569" },
+        markers: { size: 6, strokeWidth: 0, shape: "circle" },
+        itemMargin: { horizontal: 8, vertical: 4 },
+        formatter: (name, opts) => {
+           const rate = donutData.rates[opts.seriesIndex];
+           return `${name} (${rate.toFixed(0)}%)`;
+        }
       },
       tooltip: {
         custom: ({ seriesIndex }) => {
           const name = donutData.cats[seriesIndex];
-          const fill = donutData.rates[seriesIndex];
-          const wh = warehouses.find((w) => w.nom === name);
-          const bg    = isDark ? "#0F172A" : "#FFFFFF";
-          const border = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)";
-          const title = isDark ? "#F1F5F9" : "#1E293B";
-          const sub   = isDark ? "#64748B" : "#94A3B8";
-          const val   = isDark ? "#E2E8F0" : "#334155";
-          const accent = "#14B8A6";
+          const rate = donutData.rates[seriesIndex];
+          const bg    = isDark ? "#1E293B" : "#FFFFFF";
+          const border = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)";
+          const text = isDark ? "#F1F5F9" : "#1E293B";
+          const color = donutData.colors[seriesIndex];
           return `
-            <div style="background:${bg};border:1px solid ${border};border-radius:12px;padding:12px 16px;font-family:DM Sans,sans-serif;min-width:185px;box-shadow:0 8px 24px rgba(0,0,0,.15);">
-              <div style="font-weight:700;color:${title};margin-bottom:8px;font-size:13px;">${name}</div>
-              <div style="font-size:12px;color:${sub};">Occupation: <span style="color:${accent};font-weight:600;">${fill.toFixed(1)}%</span></div>
-              ${wh ? `
-              <div style="font-size:12px;color:${sub};margin-top:3px;">Stock: <span style="color:${val};">${wh.stock_existant.toLocaleString()}</span></div>
-              <div style="font-size:12px;color:${sub};">Capacité: <span style="color:${val};">${wh.capacite_totale.toLocaleString()}</span></div>
-              <div style="font-size:12px;color:${sub};">Lots: <span style="color:${val};">${wh.entrepotLots.length}</span></div>
-              ` : ""}
+            <div style="background:${bg};border:1px solid ${border};border-radius:10px;padding:10px 14px;box-shadow:0 10px 20px -5px rgba(0,0,0,0.15);">
+              <div style="font-weight:700;color:${color};margin-bottom:4px;font-size:13px;">${name}</div>
+              <div style="font-size:12px;color:${text};font-weight:600;">Occupation: ${rate.toFixed(1)}%</div>
             </div>`;
         },
       },
       stroke: { show: true, width: 2, colors: [isDark ? "#0F172A" : "#FFFFFF"] },
-      states: {
-        hover: { filter: { type: "darken", value: 0.85 } },
-        active: { filter: { type: "darken", value: 0.9 } },
-      },
-      responsive: [
-        { breakpoint: 1280, options: { chart: { height: 360 } } },
-        { breakpoint: 768, options: { chart: { height: 300 }, legend: { fontSize: "10px" } } },
-      ],
       theme: { mode: isDark ? "dark" : "light" },
     }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [warehouses, donutData, avgFill, isDark]
+    [donutData, avgFill, isDark]
   );
 
   function toggleDropdown() { setIsOpen(!isOpen); }
@@ -306,7 +288,7 @@ export default function WarehouseOccupancyInteractive() {
               options={donutOptions}
               series={donutData.rates}
               type="donut"
-              height={420}
+              height={380}
             />
 
             {/* Summary stats */}

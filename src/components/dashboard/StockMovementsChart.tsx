@@ -39,57 +39,58 @@ export default function StockMovementsChart() {
   const totalOuts = stats.reduce((s, i) => s + i.out_count, 0);
   const totalTransfers = stats.reduce((s, i) => s + i.transfer_count, 0);
   const totalLosses = stats.reduce((s, i) => s + i.loss_count, 0);
-  const totalSplits = stats.reduce((s, i) => s + (i.split_count ?? 0), 0);
-  const totalFlux = totalIns + totalOuts;
-  const totalMovements = totalIns + totalOuts + totalTransfers + totalLosses + totalSplits;
-  const balance = totalIns - totalOuts;
+  const totalSurplus = stats.reduce((s, i) => s + (i.surplus_count ?? 0), 0);
+  
+  const totalFlux = totalIns + totalOuts + totalLosses + totalSurplus;
+  const totalMovements = totalIns + totalOuts + totalTransfers + totalLosses + totalSurplus;
+  const balance = (totalIns + totalSurplus) - (totalOuts + totalLosses);
 
   const pct = (v: number, t: number, d = 0) =>
     t <= 0 ? "0" : ((v / t) * 100).toFixed(d);
 
   const COLORS = {
-    teal: "#14B8A6",
-    sky: "#0EA5E9",
-    rose: "#F43F5E",
-    violet: "#8B5CF6",
-    amber: "#F59E0B",
+    teal: "#10B981", // Success/In
+    rose: "#F43F5E", // Error/Out
+    violet: "#8B5CF6", // Loss
+    sky: "#0EA5E9", // Transfer
+    amber: "#F59E0B", // Surplus/Split
   };
 
   const series = [
     { name: "Entrées",    data: stats.map((i) => i.in_count),          color: COLORS.teal   },
     { name: "Sorties",    data: stats.map((i) => i.out_count),         color: COLORS.rose   },
-    { name: "Transferts", data: stats.map((i) => i.transfer_count),    color: COLORS.sky    },
     { name: "Pertes",     data: stats.map((i) => i.loss_count),        color: COLORS.violet },
-    { name: "Splits",     data: stats.map((i) => i.split_count ?? 0),  color: COLORS.amber  },
+    { name: "Transferts", data: stats.map((i) => i.transfer_count),    color: COLORS.sky    },
+    { name: "Surplus",    data: stats.map((i) => i.surplus_count),     color: COLORS.amber  },
   ];
 
   // ── Theme-aware ApexCharts options ────────────────────────────────────────
-  const labelColor  = isDark ? "#64748B" : "#94A3B8";
-  const gridColor   = isDark ? "#1E293B" : "#F1F5F9";
+  const labelColor  = isDark ? "#94A3B8" : "#64748B";
+  const gridColor   = isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)";
   const tooltipTheme = isDark ? "dark" : "light";
 
   const options: ApexOptions = useMemo(
     () => ({
       chart: {
-        fontFamily: "DM Sans, sans-serif",
+        fontFamily: "Inter, sans-serif",
         type: "area",
         height: 340,
         stacked: true,
         toolbar: { show: false },
         zoom: { enabled: false },
         background: "transparent",
-        animations: { enabled: true, easing: "easeinout", speed: 900 },
+        animations: { enabled: true, easing: "easeinout", speed: 800 },
       },
-      colors: [COLORS.teal, COLORS.rose, COLORS.sky, COLORS.violet, COLORS.amber],
+      colors: [COLORS.teal, COLORS.rose, COLORS.violet, COLORS.sky, COLORS.amber],
       dataLabels: { enabled: false },
-      stroke: { curve: "smooth", width: 2 },
+      stroke: { curve: "smooth", width: 2, lineCap: "round" },
       fill: {
         type: "gradient",
         gradient: {
-          shadeIntensity: 0.15,
-          opacityFrom: isDark ? 0.45 : 0.3,
-          opacityTo: 0.02,
-          stops: [0, 85, 100],
+          shadeIntensity: 0.1,
+          opacityFrom: isDark ? 0.4 : 0.25,
+          opacityTo: 0.05,
+          stops: [0, 90, 100],
         },
       },
       xaxis: {
@@ -99,43 +100,31 @@ export default function StockMovementsChart() {
         labels: { style: { fontSize: "11px", colors: labelColor, fontWeight: 500 } },
       },
       yaxis: {
-        title: {
-          text: "Mouvements",
-          style: { fontSize: "11px", color: labelColor, fontWeight: 500 },
+        labels: { 
+          style: { colors: labelColor, fontSize: "11px" },
+          formatter: (v) => v >= 1000 ? `${(v/1000).toFixed(1)}k` : v.toString()
         },
-        labels: { style: { colors: labelColor, fontSize: "11px" } },
         min: 0,
       },
       legend: {
-        show: true,
-        position: "top",
-        horizontalAlign: "left",
-        fontFamily: "DM Sans",
-        fontSize: "12px",
-        fontWeight: 500,
-        labels: { colors: isDark ? "#94A3B8" : "#475569" },
-        markers: { shape: "circle", radius: 5 },
-        itemMargin: { horizontal: 14, vertical: 4 },
+        show: false, 
       },
       grid: {
         borderColor: gridColor,
         strokeDashArray: 4,
-        position: "back",
-        xaxis: { lines: { show: false } },
-        yaxis: { lines: { show: true } },
+        padding: { left: 10, right: 10 },
       },
       tooltip: {
         shared: true,
         intersect: false,
         theme: tooltipTheme,
-        y: { formatter: (v: number) => `${v} mvt` },
-        style: { fontSize: "12px", fontFamily: "DM Sans, sans-serif" },
+        y: { formatter: (v: number) => `${v.toLocaleString()} unités` },
+        style: { fontSize: "12px" },
       },
-      markers: { size: 3, strokeWidth: 0, hover: { size: 6 } },
+      markers: { size: 0, hover: { size: 5 } },
       theme: { mode: isDark ? "dark" : "light" },
     }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [categories, isDark]
+    [categories, isDark, labelColor, gridColor, tooltipTheme]
   );
 
   // ── Stat card definitions ─────────────────────────────────────────────────
@@ -146,10 +135,9 @@ export default function StockMovementsChart() {
       sub: `${pct(totalIns, totalFlux)}% du flux`,
       Icon: ArrowUpCircle,
       TrendIcon: TrendingUp,
-      // light / dark classes
-      cardCls: "border-teal-200 bg-teal-50 dark:border-teal-500/20 dark:bg-gradient-to-br dark:from-teal-950/80 dark:to-teal-900/30",
-      textCls: "text-teal-700 dark:text-teal-400",
-      subCls:  "text-teal-600 dark:text-teal-500",
+      cardCls: "border-emerald-100 bg-emerald-50/50 dark:border-emerald-500/10 dark:bg-emerald-500/5",
+      textCls: "text-emerald-700 dark:text-emerald-400",
+      subCls:  "text-emerald-600 dark:text-emerald-500",
     },
     {
       label: "Sorties",
@@ -157,37 +145,37 @@ export default function StockMovementsChart() {
       sub: `${pct(totalOuts, totalFlux)}% du flux`,
       Icon: ArrowDownCircle,
       TrendIcon: TrendingDown,
-      cardCls: "border-red-200 bg-red-50 dark:border-rose-500/20 dark:bg-gradient-to-br dark:from-rose-950/80 dark:to-rose-900/30",
-      textCls: "text-red-700 dark:text-rose-400",
-      subCls:  "text-red-600 dark:text-rose-500",
-    },
-    {
-      label: "Transferts",
-      value: totalTransfers,
-      sub: `${pct(totalTransfers, totalMovements, 1)}% total`,
-      Icon: RefreshCw,
-      TrendIcon: Activity,
-      cardCls: "border-sky-200 bg-sky-50 dark:border-sky-500/20 dark:bg-gradient-to-br dark:from-sky-950/80 dark:to-sky-900/30",
-      textCls: "text-sky-700 dark:text-sky-400",
-      subCls:  "text-sky-600 dark:text-sky-500",
+      cardCls: "border-rose-100 bg-rose-50/50 dark:border-rose-500/10 dark:bg-rose-500/5",
+      textCls: "text-rose-700 dark:text-rose-400",
+      subCls:  "text-rose-600 dark:text-rose-500",
     },
     {
       label: "Pertes",
       value: totalLosses,
-      sub: `${pct(totalLosses, totalOuts, 1)}% sorties`,
+      sub: `${pct(totalLosses, totalOuts, 1)}% ratio`,
       Icon: AlertCircle,
       TrendIcon: TrendingDown,
-      cardCls: "border-violet-200 bg-violet-50 dark:border-violet-500/20 dark:bg-gradient-to-br dark:from-violet-950/80 dark:to-violet-900/30",
+      cardCls: "border-violet-100 bg-violet-50/50 dark:border-violet-500/10 dark:bg-violet-500/5",
       textCls: "text-violet-700 dark:text-violet-400",
       subCls:  "text-violet-600 dark:text-violet-500",
     },
     {
-      label: "Splits",
-      value: totalSplits,
-      sub: `${pct(totalSplits, totalMovements, 1)}% total`,
+      label: "Transferts",
+      value: totalTransfers,
+      sub: `${pct(totalTransfers, totalMovements, 1)}% activité`,
+      Icon: RefreshCw,
+      TrendIcon: Activity,
+      cardCls: "border-sky-100 bg-sky-50/50 dark:border-sky-500/10 dark:bg-sky-500/5",
+      textCls: "text-sky-700 dark:text-sky-400",
+      subCls:  "text-sky-600 dark:text-sky-500",
+    },
+    {
+      label: "Surplus",
+      value: totalSurplus,
+      sub: `Ajustements`,
       Icon: Scissors,
       TrendIcon: Activity,
-      cardCls: "border-amber-200 bg-amber-50 dark:border-amber-500/20 dark:bg-gradient-to-br dark:from-amber-950/80 dark:to-amber-900/30",
+      cardCls: "border-amber-100 bg-amber-50/50 dark:border-amber-500/10 dark:bg-amber-500/5",
       textCls: "text-amber-700 dark:text-amber-400",
       subCls:  "text-amber-600 dark:text-amber-500",
     },
@@ -254,7 +242,7 @@ export default function StockMovementsChart() {
               Activité des mouvements
             </h3>
             <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-              Entrées · Sorties · Transferts · Pertes · Splits
+              Suivi détaillé des flux et ajustements
             </p>
           </div>
         </div>
@@ -323,7 +311,7 @@ export default function StockMovementsChart() {
                 </span>
                 <Icon className={`size-4 ${textCls} group-hover:scale-110 transition-transform`} />
               </div>
-              <p className={`text-2xl font-black tabular-nums ${textCls}`}>{value}</p>
+              <p className={`text-2xl font-black tabular-nums ${textCls}`}>{value.toLocaleString()}</p>
               <div className="mt-2 flex items-center gap-1">
                 <TrendIcon className={`h-3 w-3 ${subCls}`} />
                 <span className={`text-[10px] font-semibold ${subCls}`}>{sub}</span>
@@ -362,7 +350,7 @@ export default function StockMovementsChart() {
                 ? "text-emerald-700 dark:text-emerald-400"
                 : "text-red-700 dark:text-rose-400"
             }`}>
-              {balance >= 0 ? "+" : ""}{balance}
+              {balance >= 0 ? "+" : ""}{balance.toLocaleString()}
             </p>
           </div>
         </div>
@@ -380,21 +368,21 @@ export default function StockMovementsChart() {
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 dark:border-white/8 pt-4">
           <div className="flex flex-wrap items-center gap-4">
             {[
-              { color: "bg-teal-500",   label: "Entrées"    },
-              { color: "bg-rose-500",   label: "Sorties"    },
-              { color: "bg-sky-500",    label: "Transferts" },
-              { color: "bg-violet-500", label: "Pertes"     },
-              { color: "bg-amber-500",  label: "Splits"     },
+              { color: "bg-emerald-500", label: "Entrées" },
+              { color: "bg-rose-500",    label: "Sorties" },
+              { color: "bg-violet-500",  label: "Pertes" },
+              { color: "bg-sky-500",     label: "Transferts" },
+              { color: "bg-amber-500",   label: "Surplus" },
             ].map(({ color, label }) => (
               <div key={label} className="flex items-center gap-2">
                 <div className={`h-2.5 w-2.5 rounded-full ${color}`} />
-                <span className="text-xs text-slate-500">{label}</span>
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{label}</span>
               </div>
             ))}
           </div>
-          <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
-            <RefreshCw className="h-3 w-3" />
-            Mise à jour automatique
+          <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+            <RefreshCw className="h-3 w-3 animate-spin-slow" />
+            Temps Réel
           </div>
         </div>
       </div>
