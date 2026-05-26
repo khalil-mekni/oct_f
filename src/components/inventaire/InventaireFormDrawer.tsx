@@ -111,10 +111,10 @@ export default function InventaireFormDrawer({
     if (!entrepot) return [];
 
     return (entrepot.entrepotLots ?? [])
-      .filter((el) => String(el.emballage.id) === String(form.emballage_id))
+      .filter((el) => el.lot && String(el.emballage.id) === String(form.emballage_id))
       .map((el) => ({
-        id: String(el.lot.id),
-        code_lot: el.lot.code_lot,
+        id: String(el.lot!.id),
+        code_lot: el.lot!.code_lot,
         quantite: Number(el.quantite),
         emballage_name: el.emballage.name,
       }));

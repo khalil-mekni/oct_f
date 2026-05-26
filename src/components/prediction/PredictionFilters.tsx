@@ -10,6 +10,7 @@ import {
   SlidersHorizontal,
   ChevronDown,
   CalendarRange,
+  Zap,
 } from "lucide-react";
 
 export type FilterParams = {
@@ -26,33 +27,49 @@ type Props = {
   params: FilterParams;
   onChange: (params: FilterParams) => void;
   onSubmit: () => void;
+  onRecommend: () => void;
   loading: boolean;
 };
 
 const EMBALLAGES = [
-  { id: 1, label: "Carton ondulé double cannelure" },
-  { id: 2, label: "Palette plastique industrielle" },
-  { id: 3, label: "Sac kraft alimentaire 5 kg" },
-  { id: 4, label: "Bidon métallique alimentaire 20L" },
+  { id: 1, label: "Cartons" },
+  { id: 2, label: "Riz Blanc" },
+  { id: 3, label: "Sucre Blanc" },
+  { id: 4, label: "Riz Étuvé" },
+  { id: 5, label: "Riz Basmati" },
+  { id: 6, label: "Complexe" },
+  { id: 7, label: "Rouleaux Adhésifs" },
+  { id: 8, label: "TNCeylon 150 G" },
+  { id: 9, label: "TNExtra 250 G" },
+  { id: 10, label: "TNExtra Plus 100 G" },
+  { id: 11, label: "TNExtra Plus 250 G" },
+  { id: 12, label: "TVBourgeon 250 G" },
+  { id: 13, label: "TVSuperieur 100 G" },
+  { id: 14, label: "TVSuperieur 250 G" },
+  { id: 15, label: "Thermo 200µ" },
+  { id: 16, label: "Thermo 500µ" },
+  { id: 17, label: "Étirable" },
+  { id: 18, label: "Étirable GINOR" },
 ];
 
 export const ENTREPOTS = [
-  { id: 3, label: "Entrepôt OCT Sousse" },
-  { id: 4, label: "Entrepôt OCT Béja" },
-  { id: 5, label: "Entrepôt OCT Gabès" },
-  { id: 6, label: "Entrepôt OCT Kairouan" },
-  { id: 7, label: "Entrepôt OCT Kasserine" },
-  { id: 8, label: "Entrepôt OCT Gafsa" },
-  { id: 9, label: "Entrepôt OCT Médenine" },
-  { id: 10, label: "Entrepôt OCT Zarzis" },
-  { id: 11, label: "Entrepôt OCT Tozeur" },
-  { id: 12, label: "Entrepôt OCT Tataouine" },
-  { id: 13, label: "Entrepôt OCT Le Kef" },
-  { id: 14, label: "Entrepôt OCT Kebili" },
-  { id: 15, label: "Entrepôt OCT Makthar" },
-  { id: 16, label: "Entrepôt OCT Sidi Bouzid" },
-  { id: 17, label: "Entrepôt OCT La Goulette" },
-  { id: 25, label: "entrepot10" },
+  { id: 1, label: "Entrepôt Sousse" },
+  { id: 2, label: "Entrepôt Gabes" },
+  { id: 3, label: "Entrepôt Sfax" },
+  { id: 4, label: "Entrepôt Goulette" },
+  { id: 5, label: "Entrepôt Rades" },
+  { id: 6, label: "Entrepôt Zarzis" },
+  { id: 7, label: "Entrepôt Medenine" },
+  { id: 8, label: "Entrepôt Beja" },
+  { id: 9, label: "Entrepôt Kairaouan" },
+  { id: 10, label: "Entrepôt Kef" },
+  { id: 11, label: "Entrepôt Kasserine" },
+  { id: 12, label: "Entrepôt Kebili" },
+  { id: 13, label: "Entrepôt Sidi Bouzid" },
+  { id: 14, label: "Entrepôt Makther" },
+  { id: 15, label: "Entrepôt Gafsa" },
+  { id: 16, label: "Entrepôt Tataouine" },
+  { id: 17, label: "Entrepôt Touzer" },
 ];
 
 const MONTHS = [
@@ -73,21 +90,19 @@ const MONTHS = [
 const now = new Date();
 const currentYear = now.getFullYear();
 const currentMonth = now.getMonth() + 1;
-const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
-const nextMonthYear = currentMonth === 12 ? currentYear + 1 : currentYear;
 
-const YEARS = Array.from({ length: 8 }, (_, i) => nextMonthYear + i);
+const YEARS = Array.from({ length: 8 }, (_, i) => currentYear + i);
 
 const getAvailableMonths = (year: number) => {
   return MONTHS.map((name, index) => ({
     id: index + 1,
     label: name,
   })).filter((month) => {
-    if (year === nextMonthYear) {
-      return month.id >= nextMonth;
+    if (year === currentYear) {
+      return month.id >= currentMonth;
     }
 
-    return year > nextMonthYear;
+    return year > currentYear;
   });
 };
 const selectCls = `
@@ -128,44 +143,64 @@ function SelectField({
 function SubmitButton({
   loading,
   onSubmit,
+  onRecommend,
+  granularity,
 }: {
   loading: boolean;
   onSubmit: () => void;
+  onRecommend: () => void;
+  granularity: string;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onSubmit}
-      disabled={loading}
-      className={`
-        group relative w-full overflow-hidden rounded-2xl px-8 py-3
-        text-sm font-bold text-white shadow-lg shadow-teal-300/40
-        transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-60
-        ${
-          loading
-            ? "bg-teal-500"
-            : "bg-gradient-to-r from-sky-500 via-teal-500 to-emerald-500 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-teal-400/40 active:translate-y-0"
-        }
-      `}
-    >
-      {!loading && (
-        <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
-      )}
-
-      <span className="relative flex items-center justify-center gap-2">
-        {loading ? (
-          <>
-            <Loader2 size={15} className="animate-spin" />
-            Calcul en cours…
-          </>
-        ) : (
-          <>
-            <Sparkles size={15} />
-            Lancer la prédiction
-          </>
+    <div className="flex gap-3">
+      <button
+        type="button"
+        onClick={onSubmit}
+        disabled={loading}
+        className={`
+          group relative flex-[2] overflow-hidden rounded-2xl px-8 py-3
+          text-sm font-bold text-white shadow-lg shadow-teal-300/40
+          transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-60
+          ${
+            loading
+              ? "bg-teal-500"
+              : "bg-gradient-to-r from-sky-500 via-teal-500 to-emerald-500 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-teal-400/40 active:translate-y-0"
+          }
+        `}
+      >
+        {!loading && (
+          <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
         )}
-      </span>
-    </button>
+
+        <span className="relative flex items-center justify-center gap-2">
+          {loading ? (
+            <>
+              <Loader2 size={15} className="animate-spin" />
+              Calcul…
+            </>
+          ) : (
+            <>
+              <Sparkles size={15} />
+              Lancer la prédiction
+            </>
+          )}
+        </span>
+      </button>
+
+      {granularity === "month" && (
+        <button
+          type="button"
+          onClick={onRecommend}
+          disabled={loading}
+          className="group relative flex-1 overflow-hidden rounded-2xl border-2 border-emerald-500 bg-white px-6 py-3 text-sm font-bold text-emerald-600 transition-all duration-300 hover:bg-emerald-50 hover:shadow-lg hover:shadow-emerald-100 disabled:opacity-50"
+        >
+          <span className="relative flex items-center justify-center gap-2">
+            <Zap size={15} className="fill-emerald-500" />
+            Recommandation
+          </span>
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -173,6 +208,7 @@ export default function PredictionFilters({
   params,
   onChange,
   onSubmit,
+  onRecommend,
   loading,
 }: Props) {
   const set = (patch: Partial<FilterParams>) =>
@@ -200,10 +236,16 @@ export default function PredictionFilters({
       <div className="mb-5 grid grid-cols-1 gap-4 lg:grid-cols-3">
         <SelectField icon={Package} label="Emballage">
           <select
-            value={params.emballageId}
-            onChange={(e) => set({ emballageId: Number(e.target.value) })}
+            value={params.emballageId ?? ""}
+            onChange={(e) =>
+              set({
+                emballageId:
+                  e.target.value === "" ? null : Number(e.target.value),
+              })
+            }
             className={selectCls}
           >
+            <option value="">Choisir un emballage...</option>
             {EMBALLAGES.map((e) => (
               <option key={e.id} value={e.id}>
                 {e.label}
@@ -317,7 +359,12 @@ export default function PredictionFilters({
   </select>
 </SelectField>
 
-            <SubmitButton loading={loading} onSubmit={onSubmit} />
+            <SubmitButton 
+              loading={loading} 
+              onSubmit={onSubmit} 
+              onRecommend={onRecommend} 
+              granularity={params.granularity} 
+            />
           </div>
         </div>
       )}
@@ -343,7 +390,12 @@ export default function PredictionFilters({
               </select>
             </SelectField>
 
-            <SubmitButton loading={loading} onSubmit={onSubmit} />
+            <SubmitButton 
+              loading={loading} 
+              onSubmit={onSubmit} 
+              onRecommend={onRecommend} 
+              granularity={params.granularity} 
+            />
           </div>
         </div>
       )}
@@ -389,7 +441,12 @@ export default function PredictionFilters({
               </select>
             </SelectField>
 
-            <SubmitButton loading={loading} onSubmit={onSubmit} />
+            <SubmitButton 
+              loading={loading} 
+              onSubmit={onSubmit} 
+              onRecommend={onRecommend} 
+              granularity={params.granularity} 
+            />
           </div>
         </div>
       )}

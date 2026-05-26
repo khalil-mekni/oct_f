@@ -43,6 +43,7 @@ export type MouvementStockRow = {
   entrepotDestination?: { id: string; nom: string } | null;
   emballage?: { id: string; code: string; name: string } | null;
   lot?: { id: string; code_lot: string } | null;
+  bonLivraison?: { id: string; numero_bl: string } | null;
 };
 
 export async function fetchMouvements(page = 1, first = 20) {
@@ -72,6 +73,10 @@ export async function fetchMouvements(page = 1, first = 20) {
           lot {
             id
             code_lot
+          }
+          bonLivraison {
+            id
+            numero_bl
           }
         }
         paginatorInfo {

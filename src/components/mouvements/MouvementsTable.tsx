@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import Button from "@/components/ui/button/Button";
 import { MouvementStock } from "@/types/mouvement";
 import { TYPES, formatEmballageLabel } from "./utils";
@@ -114,6 +115,30 @@ export default function MouvementsTable({
                         <div className="font-mono text-sm font-black text-[#1C2434] dark:text-white">
                           {m.code_mouvement ?? `#${m.id}`}
                         </div>
+
+                        {m.bonLivraison && (
+                          <div className="mt-1">
+                            <Link
+                              href={`/bon-livraisons`}
+                              className="inline-flex items-center gap-1 rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-black uppercase tracking-tight text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400"
+                            >
+                              <svg
+                                className="h-3 w-3"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                                />
+                              </svg>
+                              {m.bonLivraison.numero_bl}
+                            </Link>
+                          </div>
+                        )}
                       </td>
 
                       <td className="px-6 py-6">

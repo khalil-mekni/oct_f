@@ -5,6 +5,7 @@ export type MouvementType = "ENT" | "PRD" | "CDD" | "PTE" | "SPL";
 export type MouvementStatut = "BROUILLON" | "VALIDE";
 
 import type { Entrepot } from "@/types/entrepot";
+import type { BonLivraison } from "./bon-livraison";
 
 export type Lot = {
   id: string;
@@ -30,4 +31,5 @@ export type MouvementStock = {
   lot?: Lot | null;
   entrepotSource?: Entrepot | null;
   entrepotDestination?: Entrepot | null;
+  bonLivraison?: BonLivraison | null;
 };

@@ -21,7 +21,7 @@ function AnimatedNumber({ value }: { value: number }) {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
   }, [value]);
-  return <>{display.toFixed(2)}</>;
+  return <>{display.toFixed(0)}</>;
 }
 
 const CARDS = [

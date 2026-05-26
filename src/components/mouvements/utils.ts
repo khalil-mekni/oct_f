@@ -8,12 +8,6 @@ export const TYPES: {
   color: string;
 }[] = [
   {
-    value: "ENT",
-    label: "ENT (Entrée)",
-    hint: "Ajoute stock (destination)",
-    color: "text-blue-600 bg-blue-50",
-  },
-  {
     value: "PRD",
     label: "PRD (Sortie prod)",
     hint: "Diminue stock (source)",

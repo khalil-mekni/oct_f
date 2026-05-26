@@ -1,5 +1,11 @@
 // src/lib/predictionEmballageService.ts
 
+export type RecommandationAction = {
+  date_suggeree: string;
+  quantite: number;
+  description: string;
+};
+
 export type PredictionPoint = {
   periode: string;
   quantite_predite: number;
@@ -12,6 +18,11 @@ export type PredictionPoint = {
   quantite_recommandee: number;
   cout_recommande: number;
   alerte_rupture: boolean;
+  
+  // Nouveaux champs
+  consommation_restante_mois: number;
+  receptions_futures_mois: number;
+  recommandations_plan: RecommandationAction[];
 };
 
 export type PredictionParams = {
@@ -54,6 +65,13 @@ export async function getPredictionEmballage(
         quantite_recommandee
         cout_recommande
         alerte_rupture
+        consommation_restante_mois
+        receptions_futures_mois
+        recommandations_plan {
+          date_suggeree
+          quantite
+          description
+        }
       }
     }
   `;

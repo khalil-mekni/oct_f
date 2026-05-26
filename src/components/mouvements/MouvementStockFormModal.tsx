@@ -95,13 +95,6 @@ const selectCls = `${inputCls} cursor-pointer`;
 
 const typeCards = [
   {
-    value: "ENT" as const,
-    label: "Entrée",
-    description: "Réception de stock vers un entrepôt",
-    icon: "📥",
-    color: "blue",
-  },
-  {
     value: "CDD" as const,
     label: "Transfert",
     description: "Déplacement entre deux entrepôts",
@@ -156,7 +149,7 @@ export default function MouvementStockFormModal({
   const [step, setStep] = useState(1);
   const [typeMouvement, setTypeMouvement] = useState<
     "ENT" | "CDD" | "PTE" | "PRD" | "SPL"
-  >("ENT");
+  >("CDD");
   const [emballageId, setEmballageId] = useState("");
   const [lotId, setLotId] = useState("");
   const [entrepotSourceId, setEntrepotSourceId] = useState("");
@@ -325,7 +318,7 @@ const showLot = ["CDD", "PTE", "PRD"].includes(typeMouvement);
     (e) => String(e.id) === String(emballageId)
   );
   const selectedLot = availableLots.find(
-    (row) => String(row.lot.id) === String(lotId)
+    (row) => row.lot && String(row.lot.id) === String(lotId)
   );
   const selectedSource = entrepots.find(
     (e) => String(e.id) === String(entrepotSourceId)

@@ -2,12 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { PredictionPoint } from "@/lib/predictionEmballageService";
+import { PredictionPoint, RecommandationAction } from "@/lib/predictionEmballageService";
 import {
   ShoppingCart,
   ShieldCheck,
   PackageSearch,
-  AlertTriangle,
   Banknote,
   ChevronDown,
   ChevronUp,
@@ -17,6 +16,10 @@ import {
   Calculator,
   Calendar,
   Layers,
+  ArrowRight,
+  Info,
+  Clock,
+  CheckCircle2,
 } from "lucide-react";
 
 interface PredictionRecommendationProps {
@@ -30,16 +33,30 @@ export default function PredictionRecommendation({
   granularity,
   emballageId,
 }: PredictionRecommendationProps) {
-  const [showDetails, setShowDetails] = useState(false);
+  const [openMonths, setOpenMonths] = useState<string[]>([data[0]?.periode]);
   const router = useRouter();
 
   if (data.length === 0) return null;
 
-  // On prend la première période pour la recommandation
-  const point = data[0];
+  const now = new Date();
+  const currentMonthStr = `${now.getFullYear()}-${(now.getMonth() + 1)
+    .toString()
+    .padStart(2, "0")}`;
+  
+  // Essayer de trouver le point du mois actuel, sinon prendre le premier
+  const currentMonthPoint =
+    data.find((d) => d.periode.startsWith(currentMonthStr)) || data[0];
 
-  // Trouver la période la plus critique (celle avec la plus grande quantité prédite)
-  const criticalPoint = [...data].sort((a, b) => b.quantite_predite - a.quantite_predite)[0];
+  const isCurrentMonth = currentMonthPoint.periode.startsWith(currentMonthStr);
+  const statusLabel = isCurrentMonth ? "Statut Mois Actuel" : "Statut de la période";
+  
+  const toggleMonth = (periode: string) => {
+    setOpenMonths(prev => 
+      prev.includes(periode) 
+        ? prev.filter(p => p !== periode) 
+        : [...prev, periode]
+    );
+  };
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("fr-FR", {
@@ -48,232 +65,223 @@ export default function PredictionRecommendation({
     }).format(value);
   };
 
-  const handleOrderNow = () => {
-    // Construction de l'URL de redirection avec les paramètres demandés
+  const handleOrderNow = (rec: RecommandationAction) => {
     const params = new URLSearchParams({
       emballage_id: String(emballageId),
-      quantite: String(point.quantite_recommandee),
-      prix_unitaire: String(point.prix_unitaire),
-      cout_estime: String(point.cout_recommande),
+      quantite: String(rec.quantite),
+      date_livraison: rec.date_suggeree,
     });
-
-    // On utilise la route existante /commandes
     router.push(`/commandes?${params.toString()}`);
-    };
+  };
+
+  // Regrouper les recommandations par mois pour éviter les doublons d'accordions en vue journalière
+  const groupedRecs = data.reduce((acc, point) => {
+    if (!point.recommandations_plan || point.recommandations_plan.length === 0)
+      return acc;
+
+    const monthKey = point.periode.substring(0, 7); // YYYY-MM
+    if (!acc[monthKey]) {
+      acc[monthKey] = {
+        periode: point.periode,
+        unite: point.unite,
+        prix_unitaire: point.prix_unitaire,
+        recommandations_plan: [],
+      };
+    }
+    // Éviter les recommandations identiques (même date et quantité)
+    point.recommandations_plan.forEach((rec) => {
+      const isDuplicate = acc[monthKey].recommandations_plan.some(
+        (r: any) =>
+          r.date_suggeree === rec.date_suggeree && r.quantite === rec.quantite
+      );
+      if (!isDuplicate) {
+        acc[monthKey].recommandations_plan.push(rec);
+      }
+    });
+    return acc;
+  }, {} as Record<string, any>);
+
+  const monthsWithRecs = Object.values(groupedRecs);
 
   return (
     <div className="fade-up relative mx-auto max-w-7xl overflow-hidden rounded-[2.5rem] border border-white/80 bg-white/30 p-1 shadow-2xl backdrop-blur-2xl transition-all duration-500 hover:shadow-sky-200/20 lg:p-2" style={{ animationDelay: "150ms" }}>
-      {/* Animated background Blobs */}
       <div className="absolute -right-20 -top-20 h-96 w-96 animate-pulse rounded-full bg-sky-300/10 blur-[100px]" />
       <div className="absolute -bottom-20 -left-20 h-96 w-96 animate-pulse rounded-full bg-teal-300/10 blur-[100px]" />
 
       <div className="relative overflow-hidden rounded-[2.2rem] bg-white/80 shadow-inner">
-        {/* Banner decorative strip */}
-        <div className="h-2 w-full bg-gradient-to-r from-sky-400 via-teal-400 to-cyan-400" />
+        <div className="h-2 w-full bg-gradient-to-r from-sky-400 via-teal-400 to-emerald-400" />
 
-        <div className="flex flex-col lg:flex-row">
-          {/* Main Section */}
-          <div className="flex-1 p-8 lg:p-12">
-            <div className="mb-10 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 via-teal-500 to-cyan-500 text-white shadow-xl shadow-sky-200 ring-4 ring-white">
-                  <ShoppingCart size={28} />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-black tracking-tight text-slate-900">Plan d'Approvisionnement</h2>
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-2 w-2 rounded-full bg-teal-500 animate-ping" />
-                    <p className="text-xs font-bold uppercase tracking-widest text-teal-600">Recommandation Smart-ML</p>
-                  </div>
+        <div className="p-8 lg:p-12">
+          {/* Header */}
+          <div className="mb-10 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 via-teal-500 to-emerald-500 text-white shadow-xl shadow-sky-200 ring-4 ring-white">
+                <Zap size={28} />
+              </div>
+              <div>
+                <h2 className="text-2xl font-black tracking-tight text-slate-900">Plan d'Approvisionnement par Mois</h2>
+                <div className="flex items-center gap-2">
+                  <span className="flex h-2 w-2 rounded-full bg-teal-500 animate-ping" />
+                  <p className="text-xs font-bold uppercase tracking-widest text-teal-600">Recommandations optimisées (2-3 max / mois)</p>
                 </div>
               </div>
-
-              {/* Status Badge */}
-              <div className={`inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-xs font-black uppercase tracking-widest shadow-sm border ${
-                point.alerte_rupture
-                  ? "bg-rose-50 text-rose-600 border-rose-100 shadow-rose-100"
-                  : "bg-emerald-50 text-emerald-600 border-emerald-100 shadow-emerald-100"
-              }`}>
-                {point.alerte_rupture ? <ShieldAlert size={16} /> : <ShieldCheck size={16} />}
-                {point.alerte_rupture ? "Risque de Rupture" : "Stock Sécurisé"}
-              </div>
-            </div>
-
-            <div className="grid gap-6 md:grid-cols-3">
-              {/* Card 1: Recommandation */}
-              <div className="group relative overflow-hidden rounded-[2rem] border border-sky-100 bg-gradient-to-br from-sky-50/50 to-white p-7 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-sky-100/50">
-                <div className="mb-4 flex items-center justify-between">
-                  <div className="rounded-xl bg-sky-100 p-2.5 text-sky-600 group-hover:bg-sky-500 group-hover:text-white transition-colors">
-                    <PackageSearch size={20} />
-                  </div>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-sky-400">À Commander</span>
-                </div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-black tabular-nums tracking-tighter text-sky-900">
-                    {point.quantite_recommandee.toLocaleString("fr-FR")}
-                  </span>
-                  <span className="text-sm font-bold text-sky-600">{point.unite}</span>
-                </div>
-                <div className="mt-4 h-1.5 w-full rounded-full bg-sky-100/50 overflow-hidden">
-                   <div className="h-full bg-sky-500 rounded-full" style={{ width: '70%' }} />
-                </div>
-              </div>
-
-              {/* Card 2: Coût */}
-              <div className="group relative overflow-hidden rounded-[2rem] border border-teal-100 bg-gradient-to-br from-teal-50/50 to-white p-7 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-teal-100/50">
-                <div className="mb-4 flex items-center justify-between">
-                  <div className="rounded-xl bg-teal-100 p-2.5 text-teal-600 group-hover:bg-teal-500 group-hover:text-white transition-colors">
-                    <Banknote size={20} />
-                  </div>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-teal-400">Budget Estimé</span>
-                </div>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-black tabular-nums tracking-tighter text-teal-900">
-                    {formatCurrency(point.cout_recommande)}
-                  </span>
-                </div>
-                <p className="mt-4 text-[11px] font-medium text-slate-500">
-                  Base: <span className="font-bold text-teal-700">{point.prix_unitaire} TND</span> / {point.unite.slice(0, -1)}
-                </p>
-              </div>
-
-              {/* Card 3: Stock Actuel vs Sécurité */}
-              <div className="group relative overflow-hidden rounded-[2rem] border border-cyan-100 bg-gradient-to-br from-cyan-50/50 to-white p-7 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-cyan-100/50">
-                 <div className="mb-4 flex items-center justify-between">
-                  <div className="rounded-xl bg-cyan-100 p-2.5 text-cyan-600 group-hover:bg-cyan-500 group-hover:text-white transition-colors">
-                    <Layers size={20} />
-                  </div>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-cyan-400">Niveau de Stock</span>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-medium text-slate-500">Actuel</span>
-                    <span className="font-black text-slate-900">{point.stock_actuel} {point.unite}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-medium text-slate-500">Sécurité</span>
-                    <span className="font-black text-cyan-600">{point.stock_securite} {point.unite}</span>
-                  </div>
-                  <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
-                    <div className={`h-full rounded-full ${point.stock_actuel < point.stock_securite ? 'bg-rose-500' : 'bg-cyan-500'}`} 
-                         style={{ width: `${Math.min((point.stock_actuel / (point.stock_securite * 2)) * 100, 100)}%` }} />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Actions Section */}
-            <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
-              <button
-                onClick={handleOrderNow}
-                className="flex flex-[2] items-center justify-center gap-3 rounded-[1.5rem] bg-slate-900 py-5 text-sm font-black uppercase tracking-widest text-white shadow-2xl shadow-slate-200 transition-all hover:bg-sky-600 hover:shadow-sky-200 active:scale-[0.98]"
-              >
-                <ShoppingCart size={18} />
-                Commander Maintenant
-              </button>
-              <button
-                onClick={() => setShowDetails(!showDetails)}
-                className="flex flex-1 items-center justify-center gap-3 rounded-[1.5rem] border-2 border-slate-200 bg-white py-5 text-sm font-black uppercase tracking-widest text-slate-600 transition-all hover:border-teal-400 hover:text-teal-600"
-              >
-                {showDetails ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                Voir le plan complet
-              </button>
             </div>
           </div>
 
-          {/* Side Info Panel */}
-          <div className="bg-slate-50/50 p-8 lg:w-96 lg:border-l lg:border-slate-100 lg:p-12">
-            <h3 className="mb-8 flex items-center gap-3 text-xs font-black uppercase tracking-[0.2em] text-slate-400">
-              <TrendingUp size={16} />
-              Résumé Prévisionnel
-            </h3>
-
-            <div className="space-y-8">
-              <div className="relative pl-6 border-l-2 border-sky-200">
-                <div className="absolute -left-[5px] top-0 h-2 w-2 rounded-full bg-sky-500" />
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Consommation Attendue</p>
-                <p className="text-lg font-black text-slate-900">{point.quantite_predite} <span className="text-xs text-slate-400">{point.unite}</span></p>
-              </div>
-
-              <div className="relative pl-6 border-l-2 border-teal-200">
-                <div className="absolute -left-[5px] top-0 h-2 w-2 rounded-full bg-teal-500" />
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Stock Restant Prévu</p>
-                <p className={`text-lg font-black ${point.alerte_rupture ? 'text-rose-600' : 'text-slate-900'}`}>
-                  {point.stock_restant_prevu} <span className="text-xs text-slate-400">{point.unite}</span>
-                </p>
-              </div>
-
-              <div className="rounded-3xl bg-white p-6 shadow-sm border border-slate-100">
-                <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-amber-500">
-                  <Zap size={14} fill="currentColor" />
-                  Insight IA
+          <div className="grid gap-8 lg:grid-cols-3">
+            {/* Left: Current Month Status Card */}
+            <div className="lg:col-span-1 space-y-6">
+              <h3 className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-slate-400">
+                <Clock size={16} />
+                Statut Mois Actuel
+              </h3>
+              
+              <div className="oct-card bg-gradient-to-br from-white to-sky-50/30 p-6 space-y-5 border-sky-100">
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="font-medium text-slate-500">Stock Existant</span>
+                    <span className="font-black text-slate-900">{currentMonthPoint.stock_actuel} {currentMonthPoint.unite}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="font-medium text-slate-500">Réceptions Prévues</span>
+                    <span className="font-black text-emerald-600">+{currentMonthPoint.receptions_futures_mois} {currentMonthPoint.unite}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="font-medium text-slate-500">Conso. Prédite (J+1 à Fin)</span>
+                    <span className="font-black text-rose-500">-{currentMonthPoint.consommation_restante_mois} {currentMonthPoint.unite}</span>
+                  </div>
+                  <div className="h-px bg-slate-100" />
+                  <div className="flex justify-between items-center pt-2">
+                    <span className="text-sm font-bold text-slate-900">Bilan fin de mois</span>
+                    <span className={`text-lg font-black ${currentMonthPoint.stock_restant_prevu < currentMonthPoint.stock_securite ? 'text-rose-600' : 'text-teal-600'}`}>
+                      {currentMonthPoint.stock_restant_prevu} {currentMonthPoint.unite}
+                    </span>
+                  </div>
                 </div>
-                <p className="text-xs leading-relaxed font-medium text-slate-600 italic">
-                  "Le pic de consommation est attendu pour la période du <span className="font-bold text-slate-900">{new Date(criticalPoint.periode).toLocaleDateString("fr-FR", { month: "long" })}</span> avec <span className="font-bold text-slate-900">{criticalPoint.quantite_predite} unités</span>."
+
+                {currentMonthPoint.recommandations_plan && currentMonthPoint.recommandations_plan.length > 0 ? (
+                  <div className="rounded-2xl bg-rose-50 border border-rose-100 p-4 flex gap-3">
+                    <ShieldAlert className="text-rose-500 shrink-0" size={20} />
+                    <p className="text-[10px] font-bold text-rose-700 leading-relaxed uppercase">
+                      Stock insuffisant : Commande recommandée ci-contre.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="rounded-2xl bg-emerald-50 border border-emerald-100 p-4 flex gap-3">
+                    <ShieldCheck className="text-emerald-500 shrink-0" size={20} />
+                    <p className="text-[10px] font-bold text-emerald-700 leading-relaxed uppercase">
+                      Stock sécurisé pour ce mois.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Right: Grouped Recommendations by Month */}
+            <div className="lg:col-span-2 space-y-4">
+              <h3 className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-slate-400">
+                <Calendar size={16} />
+                Calendrier Prévisionnel
+              </h3>
+
+              <div className="space-y-3">
+                {monthsWithRecs.length > 0 ? (
+                  monthsWithRecs.map((month) => {
+                    const isOpen = openMonths.includes(month.periode);
+                    const monthLabel = new Date(month.periode).toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+                    
+                    return (
+                      <div key={month.periode} className="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm transition-all hover:shadow-md">
+                        <button 
+                          onClick={() => toggleMonth(month.periode)}
+                          className="flex w-full items-center justify-between p-5 transition-colors hover:bg-slate-50"
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${isOpen ? 'bg-teal-500 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                              <Calendar size={18} />
+                            </div>
+                            <span className="text-sm font-black capitalize text-slate-800">{monthLabel}</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="rounded-full bg-teal-50 px-3 py-1 text-[10px] font-black text-teal-600 uppercase">
+                              {month.recommandations_plan.length} commande(s)
+                            </span>
+                            {isOpen ? <ChevronUp size={20} className="text-slate-400" /> : <ChevronDown size={20} className="text-slate-400" />}
+                          </div>
+                        </button>
+
+                        {isOpen && (
+                          <div className="space-y-3 border-t border-slate-50 bg-slate-50/30 p-5 animate-in slide-in-from-top-2 duration-300">
+                            {month.recommandations_plan.map((rec, idx) => (
+                              <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-white bg-white/80 p-4 shadow-sm">
+                                <div className="flex items-center gap-4">
+                                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-50 text-teal-600">
+                                    <PackageSearch size={20} />
+                                  </div>
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-[10px] font-black text-teal-600 uppercase">
+                                        {new Date(rec.date_suggeree).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}
+                                      </span>
+                                      <span className="h-1 w-1 rounded-full bg-slate-300" />
+                                      <span className="text-[10px] font-bold text-slate-400">{rec.description}</span>
+                                    </div>
+                                    <p className="text-sm font-black text-slate-900">
+                                      Commander <span className="text-teal-600">{rec.quantite}</span> {month.unite}
+                                    </p>
+                                  </div>
+                                </div>
+                                <button 
+                                  onClick={() => handleOrderNow(rec)}
+                                  className="flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-2 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-teal-600 active:scale-95"
+                                >
+                                  Préparer
+                                  <ArrowRight size={14} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="oct-card p-10 text-center space-y-4">
+                    <div className="flex justify-center">
+                      <div className="h-16 w-16 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-500">
+                        <CheckCircle2 size={32} />
+                      </div>
+                    </div>
+                    <p className="text-sm font-bold text-slate-800">Tout est sous contrôle</p>
+                    <p className="text-xs text-slate-500 mx-auto max-w-xs">
+                      Aucune commande supplémentaire n'est requise pour les mois à venir selon les prévisions actuelles.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Footer Summary */}
+          <div className="mt-12 flex flex-col sm:flex-row gap-6 items-center justify-between p-6 rounded-3xl bg-slate-50 border border-slate-100">
+            <div className="flex items-center gap-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-sky-500 shadow-sm">
+                <Calculator size={18} />
+              </div>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Investissement Total Suggéré</p>
+                <p className="text-xl font-black text-slate-900">
+                  {formatCurrency(data.reduce((sum, month) => sum + (month.recommandations_plan?.reduce((mSum, r) => mSum + (r.quantite * month.prix_unitaire), 0) || 0), 0))}
                 </p>
               </div>
+            </div>
+            
+            <div className="flex items-center gap-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              <Info size={14} className="text-sky-400" />
+              <span>Analysé sur {data.length} mois glissants</span>
             </div>
           </div>
         </div>
-
-        {/* Details Section (Expandable) */}
-        {showDetails && (
-          <div className="animate-in slide-in-from-top duration-500 border-t border-slate-100 bg-slate-50/30 p-8 lg:p-12">
-            <div className="grid gap-10 lg:grid-cols-2">
-              <div className="space-y-6">
-                <h4 className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-slate-900">
-                  <Calculator size={18} className="text-sky-500" />
-                  Détail du calcul
-                </h4>
-                <div className="rounded-[1.5rem] bg-white p-6 space-y-4 border border-slate-100 shadow-sm">
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-slate-500">Formule utilisée</span>
-                    <code className="bg-slate-100 px-2 py-1 rounded text-sky-600 font-bold text-[10px]">
-                      Qte = max(0, Pred + Secu - Actuel)
-                    </code>
-                  </div>
-                  <div className="h-px bg-slate-50 w-full" />
-                  <p className="text-xs leading-relaxed text-slate-600">
-                    Nous calculons la recommandation en sommant la <strong>consommation prédite</strong> ({point.quantite_predite}) et le <strong>stock de sécurité</strong> ({point.stock_securite}), puis en soustrayant le <strong>stock actuel</strong> ({point.stock_actuel}).
-                  </p>
-                  <p className="text-xs leading-relaxed text-slate-600">
-                    Le stock de sécurité est fixé à <strong>20%</strong> de la consommation prévue pour pallier aux aléas logistiques.
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-6">
-                <h4 className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-slate-900">
-                  <Calendar size={18} className="text-teal-500" />
-                  Période la plus critique
-                </h4>
-                <div className="rounded-[1.5rem] bg-white p-6 space-y-4 border border-slate-100 shadow-sm">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-bold text-slate-500">Mois</span>
-                    <span className="text-sm font-black text-slate-900 capitalize">
-                      {new Date(criticalPoint.periode).toLocaleDateString("fr-FR", { month: "long", year: "numeric" })}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-bold text-slate-500">Quantité Prévue</span>
-                    <span className="text-sm font-black text-sky-600">{criticalPoint.quantite_predite} {point.unite}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-bold text-slate-500">Statut du risque</span>
-                    <span className={`text-[10px] font-black uppercase tracking-widest ${criticalPoint.alerte_rupture ? 'text-rose-500' : 'text-emerald-500'}`}>
-                      {criticalPoint.alerte_rupture ? "Rupture Probable" : "Gérable"}
-                    </span>
-                  </div>
-                  <div className="h-px bg-slate-50 w-full" />
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-black text-slate-900">Investissement Total Recommandé</span>
-                    <span className="text-lg font-black text-teal-600">{formatCurrency(point.cout_recommande)}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
