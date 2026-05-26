@@ -23,6 +23,9 @@ import {
   Truck,
   Boxes,
   ArrowLeftRight,
+  Users,        // ✅ Fournisseurs
+  UserCog,      // ✅ Gestion des utilisateurs
+  BrainCircuit, // ✅ Prédiction & recommandation
 } from "lucide-react";
 
 type Role =
@@ -52,7 +55,7 @@ const navItems: NavItem[] = [
     roles: ["ADMIN", "RESPONSABLE_APPROVISIONNEMENT", "RESPONSABLE_STOCKAGE"],
   },
   {
-    icon: <UserCircleIcon />,
+    icon: <Users />,
     name: "Fournisseurs",
     path: "/fournisseurs",
     roles: ["ADMIN", "RESPONSABLE_APPROVISIONNEMENT"],
@@ -112,7 +115,7 @@ const navItems: NavItem[] = [
     roles: ["ADMIN", "RESPONSABLE_APPROVISIONNEMENT",],
   },
   {
-    icon: <BoxCubeIcon />,
+    icon: <UserCog />,
     name: "Gestion des utilisateurs",
     path: "/G_utilisateur",
     roles: ["ADMIN"],
@@ -137,15 +140,10 @@ const navItems: NavItem[] = [
   },
 
 
+
   {
-    icon: <UserCircleIcon />,
-    name: "Predection",
-    path: "/predection",
-    roles: ["ADMIN", "RESPONSABLE_APPROVISIONNEMENT", "RESPONSABLE_STOCKAGE"],
-  },
-  {
-    icon: <UserCircleIcon />,
-    name: "salem",
+    icon: <BrainCircuit />,
+    name: "prédiction & recommandation",
     path: "/prediction-emballage",
     roles: ["ADMIN", "RESPONSABLE_APPROVISIONNEMENT", "RESPONSABLE_STOCKAGE"],
   },

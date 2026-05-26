@@ -27,6 +27,16 @@ export default function EmballagesFormModal({ editing, setRows, onClose }: any) 
       return;
     }
 
+    if (form.min_stock !== "" && Number(form.min_stock) < 0) {
+      alert("Le stock minimum ne peut pas être négatif.");
+      return;
+    }
+
+    if (form.capacity_value !== "" && Number(form.capacity_value) <= 0) {
+      alert("La capacité doit être supérieure à 0.");
+      return;
+    }
+
     setLoading(true);
     try {
       const payload = {

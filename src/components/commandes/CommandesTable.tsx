@@ -298,6 +298,13 @@ export default function CommandesTable({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (contractStats?.depasse) { setErrorMessage("Quantité supérieure au reste du contrat !"); return; }
+    
+    const qty = Number(form.quantite);
+    if (!qty || qty <= 0 || Number.isNaN(qty)) {
+      setErrorMessage("La quantité doit être supérieure à 0.");
+      return;
+    }
+
     setSubmitLoading(true);
     try {
       const payloadBase = {

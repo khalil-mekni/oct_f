@@ -131,6 +131,11 @@ export default function InventaireFormDrawer({
 
     if (form.stock_physique === "") return;
 
+    if (Number(form.stock_physique) < 0) {
+      alert("Le stock physique ne peut pas être négatif.");
+      return;
+    }
+
     setSaving(true);
 
     try {

@@ -487,6 +487,41 @@ export default function ContratTable({ data }: { data?: TableContrat[] }) {
 
       if (!form.emballage_id) {
         alert("Le type d'emballage est obligatoire.");
+        setLoading(false);
+        return;
+      }
+
+      const qteContractuelle = toNumberOrDefault(form.quantite_contractuelle, 0);
+      if (qteContractuelle <= 0) {
+        alert("La quantité contractuelle doit être supérieure à 0.");
+        setLoading(false);
+        return;
+      }
+
+      const montantHt = toNumberOrNull(form.montant_ht);
+      if (montantHt !== null && montantHt <= 0) {
+        alert("Le montant HT doit être supérieur à 0.");
+        setLoading(false);
+        return;
+      }
+
+      const montantTva = toNumberOrDefault(form.montant_tva, 0);
+      if (montantTva < 0) {
+        alert("Le montant TVA ne peut pas être négatif.");
+        setLoading(false);
+        return;
+      }
+      // Si l'utilisateur a saisi 0 pour la TVA mais que c'est requis par le métier :
+      if (form.montant_tva !== "" && Number(form.montant_tva) === 0) {
+        alert("Le montant TVA doit être supérieur à 0.");
+        setLoading(false);
+        return;
+      }
+
+      const prixUnitaire = toNumberOrNull(form.prix_unitaire);
+      if (prixUnitaire !== null && prixUnitaire <= 0) {
+        alert("Le prix unitaire doit être supérieur à 0.");
+        setLoading(false);
         return;
       }
 
