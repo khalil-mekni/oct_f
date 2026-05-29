@@ -15,7 +15,7 @@ export const EMBALLAGE_FIELDS = `
   epaisseur_ppc
   largeur
   material
-  status
+  statut
   created_at
   updated_at
 `;
