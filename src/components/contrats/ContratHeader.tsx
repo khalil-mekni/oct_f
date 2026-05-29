@@ -1,7 +1,7 @@
 import React from "react";
 import { Search, Filter, Plus, Package, CheckCircle2, ChevronRight } from "lucide-react";
 import OcrUploadButton from "@/components/common/OcrUploadButton";
-import { Upload } from "lucide-react";
+import { Download } from "lucide-react";
 interface Props {
   query: string;
   setQuery: (q: string) => void;
@@ -44,7 +44,7 @@ export const ContratHeader = ({ query, setQuery, onOpenNew, onOpenOcr, stats }: 
         onClick={onOpenOcr}
         className="bg-white text-gray-900 border-2 border-gray-900 px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-900 hover:text-white transition-all shadow-[8px_8px_0px_rgba(0,160,157,0.2)]"
       >
-        <Upload className="h-4 w-4" />
+        <Download className="h-4 w-4" />
       </button>
       <button
         onClick={onOpenNew}

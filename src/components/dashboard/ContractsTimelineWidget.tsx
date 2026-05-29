@@ -9,7 +9,6 @@ import { FileText, Calendar, AlertCircle, Clock, CheckCircle2 } from "lucide-rea
 import { format, differenceInDays, startOfMonth, endOfMonth, addMonths, isWithinInterval, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 
-/* ─── Helpers ─────────────────────────────────────────────── */
 
 function getStatusInfo(status: string) {
   switch (status?.toLowerCase()) {

@@ -22,6 +22,7 @@ import {
   ShoppingCart,
   Truck,
   Boxes,
+  Warehouse,
   ArrowLeftRight,
   Users,        // ✅ Fournisseurs
   UserCog,      // ✅ Gestion des utilisateurs
@@ -55,18 +56,6 @@ const navItems: NavItem[] = [
     roles: ["ADMIN", "RESPONSABLE_APPROVISIONNEMENT", "RESPONSABLE_STOCKAGE"],
   },
   {
-    icon: <Users />,
-    name: "Fournisseurs",
-    path: "/fournisseurs",
-    roles: ["ADMIN", "RESPONSABLE_APPROVISIONNEMENT"],
-  },
-  {
-    icon: <PageIcon />,
-    name: "Contrats",
-    path: "/contrats",
-    roles: ["ADMIN", "RESPONSABLE_APPROVISIONNEMENT"],
-  },
-  {
     icon: <ShoppingCart />,
     name: "Commandes",
     path: "/commandes",
@@ -79,28 +68,10 @@ const navItems: NavItem[] = [
     roles: ["ADMIN", "RESPONSABLE_APPROVISIONNEMENT"],
   },
   {
-    icon: <Receipt />,
-    name: "Factures",
-    path: "/factures",
-    roles: ["ADMIN", "RESPONSABLE_APPROVISIONNEMENT"],
-  },
-  {
-    icon: <BoxCubeIcon />,
-    name: "Entrepots",
-    path: "/entrepots",
-    roles: ["ADMIN", "RESPONSABLE_STOCKAGE"],
-  },
-  {
-    icon: <GridIcon />,
-    name: "Stocks",
-    path: "/stocks",
-    roles: ["ADMIN", "RESPONSABLE_STOCKAGE"],
-  },
-  {
-    icon: <Boxes />,
-    name: "Stock Inventaire",
-    path: "/stock-inventaire",
-    roles: ["ADMIN", "RESPONSABLE_STOCKAGE"],
+    icon: <CalenderIcon />,
+    name: "Calendar",
+    path: "/calendar",
+    roles: ["ADMIN", "RESPONSABLE_APPROVISIONNEMENT",],
   },
   {
     icon: <ArrowLeftRight />,
@@ -109,28 +80,73 @@ const navItems: NavItem[] = [
     roles: ["ADMIN", "RESPONSABLE_STOCKAGE"],
   },
   {
+    icon: <GridIcon />,
+    name: "Stocks",
+    path: "/stocks",
+    roles: ["ADMIN", "RESPONSABLE_STOCKAGE"],
+  },
+  
+  {
+    icon: <UserCircleIcon />,
+    name: "Fournisseurs",
+    path: "/fournisseurs",
+    roles: ["ADMIN", "RESPONSABLE_APPROVISIONNEMENT"],
+  },
+  {
+    icon: <PageIcon />,
+    name: "Contrats",
+    path: "/contrats",
+    roles: ["ADMIN", "RESPONSABLE_APPROVISIONNEMENT"],
+  },
+  
+  
+  
+  {
+    icon: <Receipt />,
+    name: "Factures",
+    path: "/factures",
+    roles: ["ADMIN", "RESPONSABLE_APPROVISIONNEMENT"],
+  },
+  {
     icon: <BoxCubeIcon />,
     name: "Emballages",
     path: "/emballages",
     roles: ["ADMIN", "RESPONSABLE_APPROVISIONNEMENT",],
   },
   {
+    icon: <Warehouse />,
+    name: "Entrepots",
+    path: "/entrepots",
+    roles: ["ADMIN", "RESPONSABLE_STOCKAGE"],
+  },
+ 
+  
+  {
+    icon: <Boxes />,
+    name: "Stock Inventaire",
+    path: "/stock-inventaire",
+    roles: ["ADMIN", "RESPONSABLE_STOCKAGE"],
+  },
+  
+  
+  {
     icon: <UserCog />,
     name: "Gestion des utilisateurs",
     path: "/G_utilisateur",
     roles: ["ADMIN"],
   },
-  {
-    icon: <CalenderIcon />,
-    name: "Calendar",
-    path: "/calendar",
-    roles: ["ADMIN"],
-  },
+ 
   {
     icon: <PieChartIcon />,
     name: "Analytics",
     path: "/prediction",
-    roles: ["ADMIN"],
+    roles: ["ADMIN", "RESPONSABLE_APPROVISIONNEMENT",],
+  },
+  {
+    icon: <BrainCircuit />,
+    name: "prédiction & recommandation",
+    path: "/prediction-emballage",
+    roles: ["ADMIN", "RESPONSABLE_APPROVISIONNEMENT", "RESPONSABLE_STOCKAGE"],
   },
   {
     icon: <UserCircleIcon />,
@@ -141,12 +157,7 @@ const navItems: NavItem[] = [
 
 
 
-  {
-    icon: <BrainCircuit />,
-    name: "prédiction & recommandation",
-    path: "/prediction-emballage",
-    roles: ["ADMIN", "RESPONSABLE_APPROVISIONNEMENT", "RESPONSABLE_STOCKAGE"],
-  },
+  
 ];
 
 const AppSidebar: React.FC = () => {

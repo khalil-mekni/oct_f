@@ -65,7 +65,6 @@ function groupMovements(items: StockHistoryItem[]): Array<{
   return groups;
 }
 
-// ─── Badges & Th helpers ──────────────────────────────────────────────────────
 
 function SensBadge({ sens }: { sens: "E" | "S" }) {
   if (sens === "E") {

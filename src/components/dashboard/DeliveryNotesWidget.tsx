@@ -13,7 +13,6 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Cell,
 } from "recharts";
 
-/* ─── Helpers ─────────────────────────────────────────────── */
 
 function statusColor(status: string) {
   switch (status?.toLowerCase()) {

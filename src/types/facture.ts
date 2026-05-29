@@ -1,18 +1,20 @@
-export type FactureStatut = "BROUILLON" | "VALIDE" | "PAYE" | "ANNULE";
-
+export type FactureStatut =
+  | "BROUILLON"
+  | "VALIDE"
+  | "PAYE";
 export type Facture = {
   id: string;
   numero_facture: string;
   date_facture: string;
-  
-  montant_ht: number;            
-  montant_penalites?: number;    
-  montant_ht_net?: number;       
-  jours_retard_total?: number;   
+
+  montant_ht: number;
+  montant_penalites?: number;
+  montant_ht_net?: number;
+  jours_retard_total?: number;
 
   montant_ttc: number;
   statut: FactureStatut;
-  
+
   // Relations directes
   bon_livraison_id: string | null;
   // Objet relationnel pour l'affichage (GraphQL)
@@ -27,7 +29,7 @@ export type Facture = {
 
   fournisseur_id?: string | null;
   contrat_id?: string | null;
-  
+
   valide_par?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
@@ -38,7 +40,7 @@ export type CreateFactureInput = {
   numero_facture: string;
   date_facture: string;
   bon_livraison_id: string | number; // On passe par le BL qui contient déjà commande_id et emballage_id
-  montant_ht: number; 
+  montant_ht: number;
   statut?: FactureStatut;
 };
 

@@ -13,15 +13,15 @@ export function normalizeFacture(f: any): TableFacture {
     id: f.id,
     // Garantir que c'est un tableau de BL
     bon_livraisons: f.bon_livraisons || (f.bon_livraison ? [f.bon_livraison] : []),
-    
+
     // Correction des types numériques (Valeur brute ou 0)
     montant_ht: Number(f.montant_ht || 0),
     montant_ttc: Number(f.montant_ttc || 0),
     montant_penalites: Number(f.montant_penalites || 0),
-    
+
     // Sécurité sur le statut
     statut:
-      f.statut === "VALIDE" || f.statut === "PAYE" || f.statut === "ANNULE"
+      f.statut === "VALIDE" || f.statut === "PAYE"
         ? f.statut
         : "BROUILLON",
   };
@@ -101,9 +101,9 @@ const UPDATE_FACTURE = `
 // --- NETTOYAGE DES DONNÉES AVANT ENVOI ---
 function sanitizeFactureInput(input: any) {
   const allowedFields = [
-    'numero_facture', 
-    'date_facture', 
-    'montant_ht', 
+    'numero_facture',
+    'date_facture',
+    'montant_ht',
     'bon_livraison_ids', // On envoie le tableau d'IDs au pluriel
     'statut'
   ];

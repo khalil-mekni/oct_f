@@ -16,11 +16,12 @@ import {
   CommandeOption,
 } from "@/types/bon-livraison";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { 
-  X, Plus, FileText, Calendar, Package, MapPin, 
-  Upload, Trash2, Edit2, AlertCircle, ChevronDown, Hash, ShoppingCart, Truck, CheckCircle2, Search
+import {
+  X, Plus, FileText, Calendar, Package, MapPin,
+  Download, Trash2, Edit2, AlertCircle, ChevronDown, Hash, ShoppingCart, Truck, CheckCircle2, Search
 } from "lucide-react";
-
+import OcrUploadModal from "@/components/common/OcrUploadModal";
+import { OcrBonLivraisonMappedData } from "@/types/ocr";
 // --- SOUS-COMPOSANT : TIMELINE BUS ---
 const CommandeTimeline = ({ total, dejaRecu, actuel }: { total: number; dejaRecu: number; actuel: number }) => {
   const totalApresSaisie = Math.min(dejaRecu + actuel, total);
@@ -28,7 +29,7 @@ const CommandeTimeline = ({ total, dejaRecu, actuel }: { total: number; dejaRecu
   const pourcentageNouveau = (totalApresSaisie / total) * 100;
 
   return (
-    
+
     <div className="bg-gray-50/80 rounded-[2rem] p-6 border border-gray-100 my-2 animate-in fade-in zoom-in-95 duration-500">
       <div className="flex justify-between items-end mb-4">
         <div>
@@ -48,12 +49,12 @@ const CommandeTimeline = ({ total, dejaRecu, actuel }: { total: number; dejaRecu
       <div className="relative h-10 flex items-center px-2">
         {/* Rail */}
         <div className="absolute left-0 right-0 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-           <div className="h-full bg-indigo-200 transition-all duration-1000" style={{ width: `${pourcentageAncien}%` }} />
-           <div className="h-full bg-indigo-600 absolute top-0 transition-all duration-1000 ease-out" style={{ width: `${pourcentageNouveau}%` }} />
+          <div className="h-full bg-indigo-200 transition-all duration-1000" style={{ width: `${pourcentageAncien}%` }} />
+          <div className="h-full bg-indigo-600 absolute top-0 transition-all duration-1000 ease-out" style={{ width: `${pourcentageNouveau}%` }} />
         </div>
 
         {/* Le Bus (Camion) */}
-        <div 
+        <div
           className="absolute transition-all duration-1000 ease-in-out z-10"
           style={{ left: `calc(${pourcentageNouveau}% - 18px)` }}
         >
@@ -110,12 +111,25 @@ export default function BonLivraisonsTable({
   const [file, setFile] = useState<File | null>(null);
   const [isCmdOpen, setIsCmdOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-
+  const [isOcrOpen, setIsOcrOpen] = useState(false);
+  const [ocrRawText, setOcrRawText] = useState("");
+  const [fournisseurs, setFournisseurs] = useState([]);
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const dropdownRef = useRef<HTMLDivElement>(null);
+  function applyOcrToBLForm(data: OcrBonLivraisonMappedData) {
+    setEditing(null);
 
+    setForm((prev) => ({
+      ...prev,
+      numero_commande: data.numero_commande || "",
+      quantite_recue: data.quantite_recue ? String(data.quantite_recue) : "",
+      date_reception: data.date_reception || prev.date_reception,
+    }));
+
+    setIsDrawerOpen(true);
+  }
   useEffect(() => setRows(data), [data]);
 
   useEffect(() => {
@@ -152,7 +166,7 @@ export default function BonLivraisonsTable({
       numero_commande: c.numero_commande,
       emballage_id: c.emballage_id ? String(c.emballage_id) : "",
       entrepot_id: c.entrepot_id ? String(c.entrepot_id) : "",
-      quantite_recue: "" 
+      quantite_recue: ""
     }));
     setIsCmdOpen(false);
     setErrorMessage("");
@@ -166,21 +180,21 @@ export default function BonLivraisonsTable({
 
 
   const stats = useMemo(() => {
-  const totalRecu = rows.reduce((acc, curr) => acc + (Number(curr.quantite_recue) || 0), 0);
-  const nbBl = rows.length;
-  // On calcule le reliquat global basé sur les commandes en attente
-  const reliquatGlobal = commandesEnAttente.reduce((acc, curr) => acc + (curr.quantite - (curr.quantite || 0)), 0);
-  
-  return { totalRecu, nbBl, reliquatGlobal };
-}, [rows, commandesEnAttente]);
+    const totalRecu = rows.reduce((acc, curr) => acc + (Number(curr.quantite_recue) || 0), 0);
+    const nbBl = rows.length;
+    // On calcule le reliquat global basé sur les commandes en attente
+    const reliquatGlobal = commandesEnAttente.reduce((acc, curr) => acc + (curr.quantite - (curr.quantite || 0)), 0);
+
+    return { totalRecu, nbBl, reliquatGlobal };
+  }, [rows, commandesEnAttente]);
 
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!editing && !file) { setErrorMessage("Le document BL est obligatoire"); return; }
     if (Number(form.quantite_recue) > remainingQuantity) {
-        setErrorMessage(`Quantité dépasse le reste à livrer (${remainingQuantity})`);
-        return;
+      setErrorMessage(`Quantité dépasse le reste à livrer (${remainingQuantity})`);
+      return;
     }
 
     setSubmitLoading(true);
@@ -211,111 +225,128 @@ export default function BonLivraisonsTable({
     } catch (err: any) { alert(err.message); }
   }
 
+
   return (
-<div className="space-y-8">
-    {/* HEADER & STATS */}
-    <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-      <div>
-        <h1 className="text-4xl font-black text-gray-900 tracking-tighter">
-          Flux Réceptions
-        </h1>
-        <p className="text-gray-400 text-sm font-medium mt-1">
-          Gestion des bons de livraison et entrées en stock
-        </p>
-      </div>
-
-      <div className="flex flex-wrap gap-3">
-        {/* Widget 1: Total Reçu */}
-        <div className="bg-white border border-gray-100 p-4 rounded-[2rem] flex items-center gap-4 min-w-[180px] shadow-sm">
-          <div className="h-12 w-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600">
-            <Package className="h-6 w-6" />
-          </div>
-          <div>
-            <span className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Reçu</span>
-            <span className="text-xl font-black text-gray-900">{stats.totalRecu.toLocaleString()}</span>
-          </div>
+    <div className="space-y-8">
+      {/* HEADER & STATS */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div>
+          <h1 className="text-4xl font-black text-gray-900 tracking-tighter">
+            Flux Réceptions
+          </h1>
+          <p className="text-gray-400 text-sm font-medium mt-1">
+            Gestion des bons de livraison et entrées en stock
+          </p>
         </div>
 
-        {/* Widget 2: Reliquat */}
-        <div className="bg-white border border-gray-100 p-4 rounded-[2rem] flex items-center gap-4 min-w-[180px] shadow-sm">
-          <div className="h-12 w-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600">
-            <Truck className="h-6 w-6" />
+        <div className="flex flex-wrap gap-3">
+          {/* Widget 1: Total Reçu */}
+          <div className="bg-white border border-gray-100 p-4 rounded-[2rem] flex items-center gap-4 min-w-[180px] shadow-sm">
+            <div className="h-12 w-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+              <Package className="h-6 w-6" />
+            </div>
+            <div>
+              <span className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Reçu</span>
+              <span className="text-xl font-black text-gray-900">{stats.totalRecu.toLocaleString()}</span>
+            </div>
           </div>
-          <div>
-            <span className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">En Attente</span>
-            <span className="text-xl font-black text-amber-600">{stats.reliquatGlobal.toLocaleString()}</span>
+
+          {/* Widget 2: Reliquat */}
+          <div className="bg-white border border-gray-100 p-4 rounded-[2rem] flex items-center gap-4 min-w-[180px] shadow-sm">
+            <div className="h-12 w-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600">
+              <Truck className="h-6 w-6" />
+            </div>
+            <div>
+              <span className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">En Attente</span>
+              <span className="text-xl font-black text-amber-600">{stats.reliquatGlobal.toLocaleString()}</span>
+            </div>
+          </div>
+
+          {/* Bouton Action */}
+          <div className="flex gap-3">
+
+            {/* Upload OCR */}
+            <button
+              onClick={() => setIsOcrOpen(true)}
+              className="bg-white text-gray-900 border-2 border-gray-900 px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-900 hover:text-white transition-all shadow-[8px_8px_0px_rgba(0,160,157,0.2)]"
+            >
+              <Download className="h-4 w-4" />
+            </button>
+
+            {/* Nouveau BL */}
+            <button
+              onClick={() => {
+                setEditing(null);
+                setForm(emptyForm);
+                setIsDrawerOpen(true);
+              }}
+              className="bg-white text-gray-900 border-2 border-gray-900 px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-900 hover:text-white transition-all shadow-[8px_8px_0px_rgba(0,160,157,0.2)]"
+            >
+              Nouveau BL
+            </button>
+
           </div>
         </div>
-
-        {/* Bouton Action */}
-        <button 
-          onClick={() => { setEditing(null); setForm(emptyForm); setIsDrawerOpen(true); }}
-          className="bg-indigo-600 hover:bg-gray-900 text-white px-8 py-4 rounded-[2rem] flex items-center gap-3 transition-all hover:scale-105 shadow-xl shadow-indigo-100 group"
-        >
-          <Plus className="h-5 w-5 stroke-[3px] group-hover:rotate-90 transition-transform" />
-          <span className="text-xs font-black uppercase tracking-[0.15em]">Nouveau BL</span>
-        </button>
       </div>
-    </div>   
-    
+
 
       {/* TABLEAU DESIGN */}
-<div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-gray-50/50">
-              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.15em] text-gray-400">Référence BL</th>
-              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.15em] text-gray-400 text-center">Commande</th>
-              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.15em] text-gray-400 text-center">Quantité Reçue</th>
-              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.15em] text-gray-400 text-right">Actions</th>
+      <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">        <table className="w-full text-left border-collapse">
+        <thead>
+          <tr className="bg-gray-50/50">
+            <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.15em] text-gray-400">Référence BL</th>
+            <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.15em] text-gray-400 text-center">Commande</th>
+            <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.15em] text-gray-400 text-center">Quantité Reçue</th>
+            <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.15em] text-gray-400 text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-50">
+          {rows.map((bl) => (
+            <tr key={bl.id} className="hover:bg-indigo-50/10 transition-colors group">
+              <td className="px-6 py-5">
+                <div className="flex items-center gap-4">
+                  <div className="h-10 w-10 rounded-2xl bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-white group-hover:shadow-sm transition-all">
+                    <FileText className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <span className="block text-sm font-black text-gray-800">{bl.numero_bl || "En attente"}</span>
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter italic">{bl.date_reception?.split("T")[0]}</span>
+                  </div>
+                </div>
+              </td>
+              <td className="px-6 py-5 text-center">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 text-indigo-700 text-[11px] font-black border border-indigo-100">
+                  <ShoppingCart className="h-3 w-3" /> {bl.numero_commande}
+                </span>
+              </td>
+              <td className="px-6 py-5 text-center">
+                <span className="text-sm font-black text-gray-700">{bl.quantite_recue}</span>
+                <span className="text-[10px] ml-1.5 text-gray-300 font-bold uppercase">Unités</span>
+              </td>
+              <td className="px-6 py-5">
+                <div className="flex justify-end gap-1">
+                  <button onClick={() => {
+                    setEditing(bl);
+                    setForm({
+                      date_reception: bl.date_reception?.split("T")[0] || "",
+                      emballage_id: String(bl.emballage_id),
+                      quantite_recue: String(bl.quantite_recue),
+                      numero_commande: bl.numero_commande,
+                      entrepot_id: String(bl.entrepot_id),
+                    });
+                    setIsDrawerOpen(true);
+                  }} className="p-2.5 text-gray-400 hover:text-indigo-600 hover:bg-white rounded-xl transition-all">
+                    <Edit2 className="h-4 w-4" />
+                  </button>
+                  <button onClick={() => handleDelete(bl.id)} className="p-2.5 text-gray-400 hover:text-red-500 hover:bg-white rounded-xl transition-all">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </td>
             </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {rows.map((bl) => (
-              <tr key={bl.id} className="hover:bg-indigo-50/10 transition-colors group">
-                <td className="px-6 py-5">
-                  <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-2xl bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-white group-hover:shadow-sm transition-all">
-                      <FileText className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <span className="block text-sm font-black text-gray-800">{bl.numero_bl || "En attente"}</span>
-                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter italic">{bl.date_reception?.split("T")[0]}</span>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-6 py-5 text-center">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 text-indigo-700 text-[11px] font-black border border-indigo-100">
-                    <ShoppingCart className="h-3 w-3" /> {bl.numero_commande}
-                  </span>
-                </td>
-                <td className="px-6 py-5 text-center">
-                  <span className="text-sm font-black text-gray-700">{bl.quantite_recue}</span>
-                  <span className="text-[10px] ml-1.5 text-gray-300 font-bold uppercase">Unités</span>
-                </td>
-                <td className="px-6 py-5">
-                  <div className="flex justify-end gap-1">
-                    <button onClick={() => {
-                        setEditing(bl);
-                        setForm({
-                            date_reception: bl.date_reception?.split("T")[0] || "",
-                            emballage_id: String(bl.emballage_id),
-                            quantite_recue: String(bl.quantite_recue),
-                            numero_commande: bl.numero_commande,
-                            entrepot_id: String(bl.entrepot_id),
-                        });
-                        setIsDrawerOpen(true);
-                      }} className="p-2.5 text-gray-400 hover:text-indigo-600 hover:bg-white rounded-xl transition-all">
-                      <Edit2 className="h-4 w-4" />
-                    </button>
-                    <button onClick={() => handleDelete(bl.id)} className="p-2.5 text-gray-400 hover:text-red-500 hover:bg-white rounded-xl transition-all">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+          ))}
+        </tbody>
+      </table>
       </div>
 
       <div className="p-6 border-t border-gray-50 bg-gray-50/30">
@@ -327,7 +358,7 @@ export default function BonLivraisonsTable({
         <>
           <div className="fixed inset-0 z-[100] bg-gray-900/30 backdrop-blur-[2px] transition-all" onClick={() => setIsDrawerOpen(false)} />
           <div className="fixed inset-y-0 right-0 z-[101] w-full max-w-md bg-white shadow-[-20px_0_50px_rgba(0,0,0,0.05)] animate-in slide-in-from-right duration-500 rounded-l-[2.5rem] border-l border-gray-100 flex flex-col">
-            
+
             <div className="p-10 pb-6 flex justify-between items-center">
               <div>
                 <h2 className="text-2xl font-black text-gray-900 tracking-tight leading-none">{editing ? "Modifier" : "Réception"}</h2>
@@ -350,9 +381,8 @@ export default function BonLivraisonsTable({
                   <button
                     type="button"
                     onClick={() => setIsCmdOpen(!isCmdOpen)}
-                    className={`w-full flex items-center justify-between rounded-2xl border-2 p-4 text-sm font-black transition-all ${
-                      form.numero_commande ? "border-indigo-600 bg-indigo-50/20 text-indigo-900" : "border-gray-100 text-gray-300"
-                    }`}
+                    className={`w-full flex items-center justify-between rounded-2xl border-2 p-4 text-sm font-black transition-all ${form.numero_commande ? "border-indigo-600 bg-indigo-50/20 text-indigo-900" : "border-gray-100 text-gray-300"
+                      }`}
                   >
                     <div className="flex items-center gap-3">
                       <Hash className={`h-4 w-4 ${form.numero_commande ? "text-indigo-600" : "text-gray-200"}`} />
@@ -377,10 +407,10 @@ export default function BonLivraisonsTable({
 
               {/* VISUELLE PAR COMMANDE (TIMELINE) */}
               {selectedCommande && (
-                <CommandeTimeline 
-                  total={selectedCommande.quantite} 
-                  dejaRecu={dejaRecu} 
-                  actuel={Number(form.quantite_recue) || 0} 
+                <CommandeTimeline
+                  total={selectedCommande.quantite}
+                  dejaRecu={dejaRecu}
+                  actuel={Number(form.quantite_recue) || 0}
                 />
               )}
 
@@ -389,14 +419,14 @@ export default function BonLivraisonsTable({
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] ml-1">Emballage</label>
-                    <select value={form.emballage_id} onChange={(e) => setForm({...form, emballage_id: e.target.value})} className="w-full rounded-2xl border-2 border-gray-50 bg-gray-50 p-4 text-xs font-black outline-none focus:border-indigo-200 focus:bg-white transition-all appearance-none cursor-pointer">
+                    <select value={form.emballage_id} onChange={(e) => setForm({ ...form, emballage_id: e.target.value })} className="w-full rounded-2xl border-2 border-gray-50 bg-gray-50 p-4 text-xs font-black outline-none focus:border-indigo-200 focus:bg-white transition-all appearance-none cursor-pointer">
                       <option value="">N/A</option>
                       {emballages.map(e => <option key={e.id} value={String(e.id)}>{e.label}</option>)}
                     </select>
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] ml-1">Destination</label>
-                    <select value={form.entrepot_id} onChange={(e) => setForm({...form, entrepot_id: e.target.value})} className="w-full rounded-2xl border-2 border-gray-50 bg-gray-50 p-4 text-xs font-black outline-none focus:border-indigo-200 focus:bg-white transition-all appearance-none cursor-pointer">
+                    <select value={form.entrepot_id} onChange={(e) => setForm({ ...form, entrepot_id: e.target.value })} className="w-full rounded-2xl border-2 border-gray-50 bg-gray-50 p-4 text-xs font-black outline-none focus:border-indigo-200 focus:bg-white transition-all appearance-none cursor-pointer">
                       <option value="">N/A</option>
                       {entrepots.map(e => <option key={e.id} value={String(e.id)}>{e.label}</option>)}
                     </select>
@@ -406,11 +436,11 @@ export default function BonLivraisonsTable({
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] ml-1">Date d'Arrivée</label>
-                    <input type="date" value={form.date_reception} onChange={(e) => setForm({...form, date_reception: e.target.value})} className="w-full rounded-2xl border-2 border-gray-50 bg-gray-50 p-4 text-xs font-black outline-none focus:border-indigo-200 focus:bg-white transition-all" required />
+                    <input type="date" value={form.date_reception} onChange={(e) => setForm({ ...form, date_reception: e.target.value })} className="w-full rounded-2xl border-2 border-gray-50 bg-gray-50 p-4 text-xs font-black outline-none focus:border-indigo-200 focus:bg-white transition-all" required />
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] ml-1">Quantité (Max: {remainingQuantity})</label>
-                    <input type="number" value={form.quantite_recue} onChange={(e) => setForm({...form, quantite_recue: e.target.value})} className="w-full rounded-2xl border-2 border-gray-100 p-4 text-xs font-black outline-none focus:border-indigo-600 transition-all placeholder:text-gray-200" placeholder="00" required />
+                    <input type="number" value={form.quantite_recue} onChange={(e) => setForm({ ...form, quantite_recue: e.target.value })} className="w-full rounded-2xl border-2 border-gray-100 p-4 text-xs font-black outline-none focus:border-indigo-600 transition-all placeholder:text-gray-200" placeholder="00" required />
                   </div>
                 </div>
 
@@ -427,14 +457,13 @@ export default function BonLivraisonsTable({
                         const droppedFile = e.dataTransfer.files[0];
                         if (droppedFile) setFile(droppedFile);
                       }}
-                      className={`relative flex flex-col items-center justify-center w-full h-36 border-2 border-dashed rounded-[2.5rem] cursor-pointer transition-all group overflow-hidden ${
-                        isDragging ? "border-indigo-500 bg-indigo-50 scale-[1.02]" : file ? "border-green-500 bg-green-50/30" : "border-gray-100 hover:bg-gray-50 hover:border-indigo-300"
-                      }`}
+                      className={`relative flex flex-col items-center justify-center w-full h-36 border-2 border-dashed rounded-[2.5rem] cursor-pointer transition-all group overflow-hidden ${isDragging ? "border-indigo-500 bg-indigo-50 scale-[1.02]" : file ? "border-green-500 bg-green-50/30" : "border-gray-100 hover:bg-gray-50 hover:border-indigo-300"
+                        }`}
                     >
                       <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setFile(e.target.files?.[0] || null)} />
                       <div className="z-10 flex flex-col items-center text-center px-4">
                         <div className={`p-3 rounded-xl mb-2 transition-all ${file ? "bg-green-600 text-white" : "bg-white shadow-sm text-indigo-600"}`}>
-                          <Upload className={`h-5 w-5 stroke-[3px] ${isDragging ? "animate-bounce" : ""}`} />
+                          <Download className={`h-5 w-5 stroke-[3px] ${isDragging ? "animate-bounce" : ""}`} />
                         </div>
                         <p className="text-[9px] font-black text-gray-600 uppercase tracking-tighter">
                           {file ? file.name : isDragging ? "Lâchez ici" : "Glisser le scan"}
@@ -448,7 +477,7 @@ export default function BonLivraisonsTable({
 
             <div className="p-10 border-t border-gray-50 bg-white flex gap-4 mt-auto">
               <button onClick={() => setIsDrawerOpen(false)} className="flex-1 py-4 text-[11px] font-black text-gray-400 uppercase tracking-widest hover:text-gray-900 transition-colors">Fermer</button>
-              <button 
+              <button
                 onClick={(e) => handleSubmit(e as any)}
                 disabled={submitLoading || !selectedCommande}
                 className="flex-[2] bg-gray-900 text-white py-5 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] shadow-2xl shadow-gray-200 hover:bg-indigo-600 disabled:bg-gray-100 disabled:text-gray-300 transition-all active:scale-95"
@@ -459,6 +488,25 @@ export default function BonLivraisonsTable({
           </div>
         </>
       )}
+      <OcrUploadModal<OcrBonLivraisonMappedData>
+        open={isOcrOpen}
+        onClose={() => setIsOcrOpen(false)}
+        entityType="bon_livraison"
+        onUseData={(data, rawText) => {
+          setOcrRawText(rawText || "");
+
+          setForm((prev) => ({
+            ...prev,
+            numero_commande: data?.numero_commande || "",
+            quantite_recue: String(data?.quantite_recue || ""),
+            date_reception: data?.date_reception || prev.date_reception,
+          }));
+
+          setIsDrawerOpen(true);
+        }}
+      />
+
     </div>
   );
+
 }

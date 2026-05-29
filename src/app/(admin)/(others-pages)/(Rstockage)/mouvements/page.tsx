@@ -27,7 +27,6 @@ import {
   AlertTriangle,
 } from "lucide-react";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatDate(value?: string | null) {
   if (!value) return "-";

@@ -19,7 +19,6 @@ type Props = {
   highlightedId?: string | number | null;
 };
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function fmt(value?: number | null) {
   return new Intl.NumberFormat("fr-FR").format(Number(value ?? 0));

@@ -13,7 +13,6 @@ import {
   ResponsiveContainer, CartesianGrid, Cell,
 } from "recharts";
 
-/* ─── Helpers ─────────────────────────────────────────────── */
 
 function statusColor(status: string) {
   switch (status?.toLowerCase()) {

@@ -7,7 +7,6 @@ import { FileText, ShieldAlert, CircleCheckBig, AlertCircle, Clock, ChevronRight
 import { useContractsWidget } from "@/hooks/useContractsWidget";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
-/* ─── Helpers ─────────────────────────────────────────────── */
 
 function statusColor(status: string): "success" | "error" | "warning" | "light" {
   switch (status?.toLowerCase()) {
