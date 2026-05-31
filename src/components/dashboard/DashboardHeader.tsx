@@ -47,8 +47,8 @@ export default function DashboardHeader() {
           </div>
           <div>
             <h1 className="text-[18px] font-medium tracking-tight text-slate-900 leading-tight">
-              Logistics{" "}
-              <span style={{ color: "#21DAFF" }}>Control Center</span>
+              Tableau de Bord{" "}
+              <span style={{ color: "#21DAFF" }}>Logistique</span>
             </h1>
             <p className="mt-0.5 text-[12px] text-slate-400">
               Pilotage opérationnel des flux et entrepôts

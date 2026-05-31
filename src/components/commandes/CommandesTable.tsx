@@ -37,7 +37,6 @@ const emptyForm: CommandeForm = {
 
 const STATUT_STYLES: Record<string, string> = {
   EN_ATTENTE: "bg-amber-50 text-amber-700 border-amber-200",
-  VALIDEE: "bg-blue-50 text-blue-700 border-blue-200",
   RECEPTIONNEE: "bg-green-50 text-green-700 border-green-200",
   ANNULEE: "bg-gray-100 text-gray-600 border-gray-200",
   PARTIELLEMENT_RECEPTIONNEE: "bg-purple-50 text-purple-700 border-purple-200",
@@ -333,7 +332,6 @@ export default function CommandesTable({
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = {
       EN_ATTENTE: 0,
-      VALIDEE: 0,
       PARTIELLEMENT_RECEPTIONNEE: 0,
       RECEPTIONNEE: 0,
       ANNULEE: 0,
@@ -354,7 +352,7 @@ export default function CommandesTable({
     if (!q) return rows;
 
     // Liste des statuts possibles
-    const statusList = ['EN_ATTENTE', 'VALIDEE', 'PARTIELLEMENT_RECEPTIONNEE', 'RECEPTIONNEE', 'ANNULEE'];
+    const statusList = ['EN_ATTENTE', 'PARTIELLEMENT_RECEPTIONNEE', 'RECEPTIONNEE', 'ANNULEE'];
 
     if (statusList.includes(q)) {
       // Si on a cliqué sur un bouton de statut
@@ -522,7 +520,7 @@ export default function CommandesTable({
       {/* FILTRES RAPIDES AVEC BADGES */}
       <div className="flex gap-3 mb-8 overflow-x-auto pb-4 scrollbar-hide items-center">
         <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mr-2">Filtrer par :</div>
-        {['TOUT', 'EN_ATTENTE', 'VALIDEE', 'PARTIELLEMENT_RECEPTIONNEE', 'RECEPTIONNEE'].map((s) => {
+        {['TOUT', 'EN_ATTENTE', 'PARTIELLEMENT_RECEPTIONNEE', 'RECEPTIONNEE'].map((s) => {
           const isActive = s === 'TOUT' ? query === '' : query === s;
           const count = s === 'TOUT' ? rows.length : (statusCounts[s] || 0);
 
@@ -608,15 +606,15 @@ export default function CommandesTable({
                         <button onClick={() => openEdit(item)} className="p-3 text-gray-400 hover:bg-white hover:text-indigo-600 rounded-2xl shadow-none hover:shadow-md transition-all">
                           <Edit2 className="h-4 w-4" />
                         </button>
-                        {item.statut === "VALIDEE" && (
-                          <button onClick={() => handleCancel(item.id)} className="p-3 text-gray-400 hover:bg-white hover:text-amber-600 rounded-2xl transition-all">
-                            <Ban className="h-4 w-4" />
-                          </button>
-                        )}
                         {item.statut === "EN_ATTENTE" && (
-                          <button onClick={() => handleDrop(item.id)} className="p-3 text-gray-400 hover:bg-white hover:text-red-600 rounded-2xl transition-all">
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                          <>
+                            <button onClick={() => handleCancel(item.id)} className="p-3 text-gray-400 hover:bg-white hover:text-amber-600 rounded-2xl transition-all">
+                              <Ban className="h-4 w-4" />
+                            </button>
+                            <button onClick={() => handleDrop(item.id)} className="p-3 text-gray-400 hover:bg-white hover:text-red-600 rounded-2xl transition-all">
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </>
                         )}
                       </div>
                     </td>

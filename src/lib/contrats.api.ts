@@ -18,6 +18,8 @@ export const CONTRAT_FIELDS = `
   plafond_penalite
   prix_unitaire
   statut
+  commandes_count
+  bon_livraisons_count
   fournisseur_id
   fournisseur {
     id

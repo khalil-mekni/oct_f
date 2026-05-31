@@ -49,6 +49,8 @@ export default function InventairePage() {
     { id: string; label: string }[]
   >([]);
 
+  const [entrepotsRaw, setEntrepotsRaw] = useState<any[]>([]);
+
   const [emballagesOptions, setEmballagesOptions] = useState<
     { id: string; label: string }[]
   >([]);
@@ -71,6 +73,8 @@ export default function InventairePage() {
           label: e.nom,
         }))
       );
+
+      setEntrepotsRaw(entrepotsRes);
 
       setEmballagesOptions(
         emballagesRes.emballages.data.map((e) => ({
@@ -216,11 +220,12 @@ export default function InventairePage() {
           }}
         />
 
-        <InventaireFormDrawer
+               <InventaireFormDrawer
           open={formOpen}
           item={editing}
           entrepots={entrepotsOptions}
           emballages={emballagesOptions}
+          entrepotsRaw={entrepotsRaw}
           onClose={() => {
             setFormOpen(false);
             setEditing(null);

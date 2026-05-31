@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 import {
   fetchEntrepots,
   updateEntrepot,
@@ -36,6 +37,9 @@ export default function EntrepotsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const highlightedId = searchParams.get("highlight");
+
+  const { user } = useAuth();
+  const isAdmin = user?.role === "ADMIN";
 
   async function loadData() {
     setLoading(true);
@@ -177,10 +181,10 @@ export default function EntrepotsPage() {
         count={filteredItems.length}
         query={search}
         setQuery={setSearch}
-        onOpenNew={() => {
+        onOpenNew={isAdmin ? () => {
           setEditingItem(null);
           setIsModalOpen(true);
-        }}
+        } : undefined}
         onRefresh={loadData}
       />
 
@@ -313,13 +317,13 @@ export default function EntrepotsPage() {
             </div>
           ) : loading ? (
             <div className="p-4">
-              <EntrepotSkeleton />
+              <EntrepotSkeleton isAdmin={isAdmin} />
             </div>
           ) : (
             <div className="p-2 md:p-3">
               <EntrepotsListView
                 rows={filteredItems}
-                onEdit={handleOpenEdit}
+                onEdit={isAdmin ? handleOpenEdit : undefined}
                 highlightedId={highlightedId}
               />
             </div>

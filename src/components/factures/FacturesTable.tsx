@@ -57,6 +57,11 @@ const STATUT_STYLES: Record<string, string> = {
   VALIDE: "bg-blue-50 text-blue-700 border-blue-200",
   PAYE: "bg-green-50 text-green-700 border-green-200",
 };
+const FACTURE_STATUTS: FactureStatut[] = [
+  "BROUILLON",
+  "VALIDE",
+  "PAYE",
+];
 
 const formatDate = (v?: string | null) =>
   v ? (v.includes("T") ? v.split("T")[0] : v) : "-";
@@ -81,6 +86,7 @@ export default function FacturesTable({
   const [query, setQuery] = useState("");
   const [blSearch, setBlSearch] = useState("");
   const [submitLoading, setSubmitLoading] = useState(false);
+  const [statusLoadingId, setStatusLoadingId] = useState<Id | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
   const [blDropdownOpen, setBlDropdownOpen] = useState(false);
 
@@ -288,6 +294,33 @@ export default function FacturesTable({
       setSubmitLoading(false);
     }
   }
+  async function handleStatusChange(
+    factureId: Id,
+    statut: FactureStatut
+  ) {
+    try {
+      setStatusLoadingId(factureId);
+
+      const res = await updateFacture(factureId, {
+        statut,
+      });
+
+      setRows((prev) =>
+        prev.map((row) =>
+          String(row.id) === String(factureId)
+            ? normalizeFacture(res.updateFacture)
+            : row
+        )
+      );
+    } catch (err: any) {
+      alert(
+        err?.graphQLErrors?.[0]?.message ||
+        "Erreur lors du changement de statut"
+      );
+    } finally {
+      setStatusLoadingId(null);
+    }
+  }
 
   async function handleDelete(id: Id) {
     if (
@@ -303,7 +336,7 @@ export default function FacturesTable({
     } catch (err: any) {
       alert(
         "Erreur lors de la suppression : " +
-          (err.message || "Serveur injoignable")
+        (err.message || "Serveur injoignable")
       );
     }
   }
@@ -366,11 +399,10 @@ export default function FacturesTable({
                   >
                     <td className="px-8 py-5">
                       <ChevronDown
-                        className={`h-4 w-4 transition-transform ${
-                          expandedId === item.id
-                            ? "rotate-180 text-indigo-600"
-                            : ""
-                        }`}
+                        className={`h-4 w-4 transition-transform ${expandedId === item.id
+                          ? "rotate-180 text-indigo-600"
+                          : ""
+                          }`}
                       />
                     </td>
                     <td className="px-6 py-5">
@@ -399,12 +431,46 @@ export default function FacturesTable({
                         {formatMoney(item.montant_ttc)} DT
                       </span>
                     </td>
-                    <td className="px-6 py-5">
-                      <span
-                        className={`rounded-full border px-4 py-1 text-[9px] font-black uppercase ${STATUT_STYLES[item.statut]}`}
-                      >
-                        {item.statut}
-                      </span>
+                    <td
+                      className="px-6 py-5"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="relative inline-block">
+                        <select
+                          value={item.statut}
+                          disabled={statusLoadingId === item.id}
+                          onChange={(e) =>
+                            handleStatusChange(
+                              item.id,
+                              e.target.value as FactureStatut
+                            )
+                          }
+                          className={`
+        cursor-pointer
+        appearance-none
+        rounded-full
+        border
+        px-4
+        py-2
+        pr-8
+        text-[10px]
+        font-black
+        uppercase
+        outline-none
+        transition-all
+        ${STATUT_STYLES[item.statut]}
+        ${statusLoadingId === item.id ? "opacity-50" : ""}
+      `}
+                        >
+                          {FACTURE_STATUTS.map((status) => (
+                            <option key={status} value={status}>
+                              {status}
+                            </option>
+                          ))}
+                        </select>
+
+                        <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2" />
+                      </div>
                     </td>
                     <td
                       className="px-8 py-5 text-right"
@@ -558,11 +624,10 @@ export default function FacturesTable({
                           key={bl.id}
                           type="button"
                           onClick={() => toggleBL(String(bl.id))}
-                          className={`mb-1 flex w-full items-center justify-between rounded-xl p-3 text-left text-xs font-black transition-colors ${
-                            form.bon_livraison_ids.includes(String(bl.id))
-                              ? "bg-indigo-50 text-indigo-600"
-                              : "hover:bg-gray-50"
-                          }`}
+                          className={`mb-1 flex w-full items-center justify-between rounded-xl p-3 text-left text-xs font-black transition-colors ${form.bon_livraison_ids.includes(String(bl.id))
+                            ? "bg-indigo-50 text-indigo-600"
+                            : "hover:bg-gray-50"
+                            }`}
                         >
                           <span>
                             {bl.numero_bl}{" "}
@@ -673,7 +738,7 @@ export default function FacturesTable({
                       {(Math.max(
                         0,
                         Number(form.montant_ht || 0) -
-                          Number(form.montant_penalites || 0)
+                        Number(form.montant_penalites || 0)
                       ) * 1.19).toFixed(3)}{" "}
                       <span className="text-sm font-medium">DT</span>
                     </p>

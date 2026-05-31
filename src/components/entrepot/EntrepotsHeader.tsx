@@ -6,7 +6,7 @@ interface Props {
   count: number;
   query: string;
   setQuery: (q: string) => void;
-  onOpenNew: () => void;
+  onOpenNew?: () => void;
   onRefresh?: () => void;
   loading?: boolean;
 }
@@ -56,14 +56,16 @@ export const EntrepotsHeader = ({
               </button>
             )}
 
-            <button
-              type="button"
-              onClick={onOpenNew}
-              className="flex items-center gap-2 rounded-xl border-2 border-[#1C2434] bg-[#1C2434] px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-white shadow-[3px_3px_0px_rgba(0,160,157,0.4)] transition-all hover:bg-[#00A09D] hover:border-[#00A09D] active:translate-y-0.5 active:shadow-none dark:border-white dark:bg-transparent dark:text-white"
-            >
-              <Plus size={14} strokeWidth={3} />
-              Nouvel entrepôt
-            </button>
+            {onOpenNew && (
+              <button
+                type="button"
+                onClick={onOpenNew}
+                className="flex items-center gap-2 rounded-xl border-2 border-[#1C2434] bg-[#1C2434] px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-white shadow-[3px_3px_0px_rgba(0,160,157,0.4)] transition-all hover:bg-[#00A09D] hover:border-[#00A09D] active:translate-y-0.5 active:shadow-none dark:border-white dark:bg-transparent dark:text-white"
+              >
+                <Plus size={14} strokeWidth={3} />
+                Nouvel entrepôt
+              </button>
+            )}
           </div>
         </div>
 

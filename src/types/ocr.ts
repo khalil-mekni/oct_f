@@ -12,14 +12,7 @@ export type OcrAnalyzeResponse<T = Record<string, unknown>> = {
     raw_text: string;
     mapped_data: Partial<T>;
 };
-export type OcrCommandeMappedData = {
-  numero_commande_source?: string;
-  date_livraison_prevue?: string;
-  quantite?: number;
-  fournisseur_nom?: string;
-  emballage_nom?: string;
-  entrepot_nom?: string;
-};
+
 export type OcrContratMappedData = {
   numero_contrat?: string;
   objet?: string;
@@ -32,4 +25,17 @@ export type OcrContratMappedData = {
   prix_unitaire?: number;
   fournisseur_nom?: string;
   emballage_nom?: string;
+};
+export type OcrBonLivraisonMappedData = {
+  numero_bl?: string;
+
+  date_livraison?: string;
+
+  quantite_recue?: number;
+
+  fournisseur_nom?: string;
+
+  emballage_nom?: string;
+
+  commande_numero?: string;
 };

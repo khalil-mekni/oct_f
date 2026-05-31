@@ -135,6 +135,8 @@ export type DeliveryNotesWidgetData = {
   total: number;
   validated: number;
   pending: number;
+  late: number;
+  totalQuantityReceived: number;
   warehousesInvolved: number;
   recentDeliveryNotes: DeliveryNoteWidgetItem[];
 };
@@ -156,6 +158,63 @@ export type OrdersWidgetData = {
   received_count: number;
   late: number;
   recentOrders: OrderWidgetItem[];
+};
+
+
+export type ContractAnalysisItem = {
+  id: string;
+  reference: string;
+  partnerName?: string | null;
+  emballageName?: string | null;
+  quantite_contractuelle: number;
+  quantite_realisee: number;
+  quantite_restante: number;
+  consumptionRate: number;
+  timeElapsedRate: number;
+  remainingDays: number;
+  status: "NORMAL" | "WARNING" | "CRITICAL" | "OVERRUN";
+  amountHt: number;
+  realizedAmount: number;
+  remainingAmount: number;
+  budgetProgress: number;
+  expiryDate?: string | null;
+};
+
+export type MonthlyExpense = {
+  month: string;
+  amount: number;
+};
+
+export type SupplierBudget = {
+  supplierName: string;
+  budget: number;
+  consumed: number;
+};
+
+export type ContractTimelineEvent = {
+  id: string;
+  type: string;
+  title: string;
+  description: string;
+  date: string;
+  status?: string | null;
+};
+
+export type ContractAnalysisKPIs = {
+  totalAmount: number;
+  consumedAmount: number;
+  remainingBudget: number;
+  activeCount: number;
+  expiredCount: number;
+  expiringSoonCount: number;
+};
+
+export type ContractAnalysisData = {
+  kpis: ContractAnalysisKPIs;
+  items: ContractAnalysisItem[];
+  monthlyExpenses: MonthlyExpense[];
+  supplierBudgets: SupplierBudget[];
+  timeline: ContractTimelineEvent[];
 };
 
 

@@ -124,11 +124,11 @@ export default function DeliveryNotesWidget() {
       <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/8 px-6 py-4">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/30">
-            <ClipboardCheck className="size-4 text-white" />
+            <Truck className="size-4 text-white" />
           </div>
           <div>
-            <h3 className="font-bold text-slate-800 dark:text-white">Bons de livraison</h3>
-            <p className="text-xs text-slate-400">Réceptions et validations entrepôts</p>
+            <h3 className="font-bold text-slate-800 dark:text-white">Détails des Livraisons</h3>
+            <p className="text-xs text-slate-400">Flux des derniers bons de livraison</p>
           </div>
         </div>
         <span className="flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 px-3 py-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">

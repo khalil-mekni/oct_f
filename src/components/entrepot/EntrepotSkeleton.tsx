@@ -1,11 +1,13 @@
 "use client";
 
-export const EntrepotSkeleton = () => (
+export const EntrepotSkeleton = ({ isAdmin = true }: { isAdmin?: boolean }) => (
   <div className="space-y-0">
     {[...Array(5)].map((_, i) => (
       <div
         key={i}
-        className="grid animate-pulse grid-cols-9 items-center gap-2 border-b border-gray-50 px-6 py-5 last:border-b-0"
+        className={`grid animate-pulse items-center gap-2 border-b border-gray-50 px-6 py-5 last:border-b-0 ${
+          isAdmin ? "grid-cols-9" : "grid-cols-8"
+        }`}
         style={{ animationDelay: `${i * 80}ms` }}
       >
         {/* Expand button */}
@@ -60,9 +62,11 @@ export const EntrepotSkeleton = () => (
         </div>
 
         {/* Action button */}
-        <div className="flex justify-end">
-          <div className="h-8 w-24 rounded-xl bg-gray-100" />
-        </div>
+        {isAdmin && (
+          <div className="flex justify-end">
+            <div className="h-8 w-24 rounded-xl bg-gray-100" />
+          </div>
+        )}
       </div>
     ))}
   </div>

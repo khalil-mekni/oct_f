@@ -12,17 +12,14 @@ export default function StockageDashboard() {
       <DashboardHeader />
       <LogisticsMetrics />
 
-      {/* ── Main Operations Section ── */}
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
-        {/* Occupancy (Left, 8/12) */}
-        <div className="xl:col-span-8">
-           <WarehouseOccupancyInteractive />
-        </div>
+      {/* ── Occupancy Section (Full Width) ── */}
+      <div className="w-full">
+         <WarehouseOccupancyInteractive />
+      </div>
         
-        {/* Delivery Quantities (Right, 4/12) - Relevant for receiving goods */}
-        <div className="xl:col-span-4">
-           <DeliveryQuantitiesWidget />
-        </div>
+      {/* ── Delivery Analysis (Full Width) ── */}
+      <div className="w-full">
+         <DeliveryQuantitiesWidget />
       </div>
 
       {/* ── Movements & Trends Section ── */}

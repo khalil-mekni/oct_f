@@ -1,3 +1,4 @@
+import { Metadata } from "next";
 import { Outfit } from "next/font/google";
 import "./globals.css";
 import "flatpickr/dist/flatpickr.css";
@@ -9,6 +10,14 @@ import { AuthProvider } from "@/context/AuthContext";
 const outfit = Outfit({
   subsets: ["latin"],
 });
+
+export const metadata: Metadata = {
+  title: "OCT",
+  description: "Office du Commerce de la Tunisie",
+  icons: {
+    icon: "/images/logo/oct.webp",
+  },
+};
 
 export default function RootLayout({
   children,

@@ -92,7 +92,7 @@ export async function getBonLivraison(id: string | number) {
 }
 
 const CREATE_BON_LIVRAISON = `
-  mutation CreateBonLivraison($input: CreateBonLivraisonInput!, $document_bl: Upload!) {
+  mutation CreateBonLivraison($input: CreateBonLivraisonInput!, $document_bl: Upload) {
     createBonLivraison(input: $input, document_bl: $document_bl) {
       ${BON_LIVRAISON_FIELDS}
     }
@@ -103,16 +103,12 @@ export async function createBonLivraison(
   input: CreateBonLivraisonInput,
   file?: File
 ) {
-  if (file) {
-    return createBonLivraisonWithFile(input, file);
-  }
-
-  throw new Error("Le fichier du bon de livraison est obligatoire.");
+  return createBonLivraisonWithFile(input, file);
 }
 
 export async function createBonLivraisonWithFile(
   input: CreateBonLivraisonInput,
-  file: File
+  file?: File
 ) {
   const endpoint =
     process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || "http://localhost:8000/graphql";
@@ -125,14 +121,14 @@ export async function createBonLivraisonWithFile(
     },
   });
 
-  const map = JSON.stringify({
-    "0": ["variables.document_bl"],
-  });
+  const map = JSON.stringify(file ? { "0": ["variables.document_bl"] } : {});
 
   const formData = new FormData();
   formData.append("operations", operations);
   formData.append("map", map);
-  formData.append("0", file);
+  if (file) {
+    formData.append("0", file);
+  }
 
   const response = await fetch(endpoint, {
     method: "POST",

@@ -228,7 +228,63 @@ import type {
   ContractsWidgetData,
   DeliveryNotesWidgetData,
   OrdersWidgetData,
+  ContractAnalysisData,
 } from "@/types/dashboard.types";
+
+export async function getContractAnalysis(): Promise<ContractAnalysisData> {
+  const query = `
+    query GetContractAnalysis {
+      contractAnalysis {
+        kpis {
+          totalAmount
+          consumedAmount
+          remainingBudget
+          activeCount
+          expiredCount
+          expiringSoonCount
+        }
+        items {
+          id
+          reference
+          partnerName
+          emballageName
+          quantite_contractuelle
+          quantite_realisee
+          quantite_restante
+          consumptionRate
+          timeElapsedRate
+          remainingDays
+          status
+          amountHt
+          realizedAmount
+          remainingAmount
+          budgetProgress
+          expiryDate
+        }
+        monthlyExpenses {
+          month
+          amount
+        }
+        supplierBudgets {
+          supplierName
+          budget
+          consumed
+        }
+        timeline {
+          id
+          type
+          title
+          description
+          date
+          status
+        }
+      }
+    }
+  `;
+
+  const data = await graphqlRequest<{ contractAnalysis: ContractAnalysisData }>(query);
+  return data.contractAnalysis;
+}
 
 export async function getContractsWidget(): Promise<ContractsWidgetData> {
   const query = `
@@ -262,6 +318,8 @@ export async function getDeliveryNotesWidget(): Promise<DeliveryNotesWidgetData>
         total
         validated
         pending
+        late
+        totalQuantityReceived
         warehousesInvolved
         recentDeliveryNotes {
           id

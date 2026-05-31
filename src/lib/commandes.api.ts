@@ -8,9 +8,11 @@ import {
 } from "@/types/commandes";
 
 export function normalizeCommande(item: Commande): TableCommande {
+  let status = item.statut;
+  if (status === "VALIDEE") status = "RECEPTIONNEE";
+
   const allowed = [
     "EN_ATTENTE",
-  "VALIDEE",
   "PARTIELLEMENT_RECEPTIONNEE",
   "RECEPTIONNEE",
   "ANNULEE",
@@ -19,8 +21,8 @@ export function normalizeCommande(item: Commande): TableCommande {
   return {
     ...item,
     id: item.id,
-    statut: allowed.includes(item.statut as any)
-      ? (item.statut as TableCommande["statut"])
+    statut: allowed.includes(status as any)
+      ? (status as TableCommande["statut"])
       : "EN_ATTENTE",
   };
 }

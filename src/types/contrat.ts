@@ -19,6 +19,9 @@ id: string;
   prix_unitaire?: number | null;
   statut: "ACTIF" | "EXPIRE" | "SUSPENDU";
 
+  commandes_count?: number;
+  bon_livraisons_count?: number;
+
   fournisseur_id: string;
   emballage_id: string;
 

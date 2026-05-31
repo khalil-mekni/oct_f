@@ -53,9 +53,23 @@ function levelStyles(level: WarehouseDetailedItem["level"]) {
 }
 
 const DONUT_COLORS = [
-  "#6366F1", "#10B981", "#F59E0B", "#F43F5E", "#8B5CF6",
-  "#0EA5E9", "#EC4899", "#14B8A6", "#F97316", "#64748B",
-  "#4F46E5", "#059669", "#D97706", "#DC2626", "#7C3AED",
+  "#E6194B", // Red
+  "#3CB44B", // Green
+  "#FFE119", // Yellow
+  "#4363D8", // Blue
+  "#F58231", // Orange
+  "#911EB4", // Purple
+  "#42D4F4", // Cyan
+  "#F032E6", // Magenta
+  "#BDB76B", // Dark Khaki
+  "#FABEBE", // Pink
+  "#008080", // Teal
+  "#E6BEFF", // Lavender
+  "#9A6324", // Brown
+  "#FFFAC8", // Beige
+  "#800000", // Maroon
+  "#AAFFC3", // Mint
+  "#808000", // Olive
 ];
 
 export default function WarehouseOccupancyInteractive() {
@@ -73,20 +87,20 @@ export default function WarehouseOccupancyInteractive() {
 
   const active = warehouses.find((w) => w.id === activeId) ?? warehouses[0] ?? null;
 
-  // Each warehouse is a slice
+  // Show all warehouses without grouping
   const donutData = useMemo(() => {
-    const top = warehouses.slice(0, 15);
-    const rest = warehouses.slice(15);
-    const cats = top.map((w) => w.nom);
-    const rates = top.map((w) => w.fillRate);
-    const ids = top.map((w) => w.id);
+    const cats = warehouses.map((w) => w.nom);
+    const rates = warehouses.map((w) => w.fillRate);
+    const ids = warehouses.map((w) => w.id);
     
-    if (rest.length > 0) {
-      cats.push(`Autres (${rest.length})`);
-      rates.push(rest.reduce((s, w) => s + w.fillRate, 0) / rest.length);
-      ids.push("others");
-    }
-    return { cats, rates, ids, colors: DONUT_COLORS.slice(0, cats.length) };
+    return { 
+      cats, 
+      rates, 
+      ids, 
+      colors: DONUT_COLORS.length >= cats.length 
+        ? DONUT_COLORS.slice(0, cats.length) 
+        : [...DONUT_COLORS, ...Array(cats.length - DONUT_COLORS.length).fill("#CBD5E1")] 
+    };
   }, [warehouses]);
 
   const avgFill =
@@ -100,17 +114,17 @@ export default function WarehouseOccupancyInteractive() {
       colors: donutData.colors,
       chart: {
         type: "donut",
-        height: 380,
+        height: 650,
         toolbar: { show: false },
         background: "transparent",
         events: {
           dataPointSelection: (_e, _c, cfg) => {
             const id = donutData.ids[cfg.dataPointIndex];
-            if (id && id !== "others") setActiveId(id);
+            if (id) setActiveId(id);
           },
           dataPointMouseEnter: (_e, _c, cfg) => {
             const id = donutData.ids[cfg.dataPointIndex];
-            if (id && id !== "others") setActiveId(id);
+            if (id) setActiveId(id);
           },
         },
       },
@@ -118,7 +132,7 @@ export default function WarehouseOccupancyInteractive() {
       plotOptions: {
         pie: {
           donut: {
-            size: "72%",
+            size: "65%",
             labels: {
               show: true,
               total: {
@@ -147,15 +161,16 @@ export default function WarehouseOccupancyInteractive() {
       legend: {
         show: true,
         position: "bottom",
-        fontSize: "11px",
+        fontSize: "12px",
         fontFamily: "Inter, sans-serif",
-        fontWeight: 500,
-        labels: { colors: isDark ? "#94A3B8" : "#475569" },
+        fontWeight: 600,
+        labels: { colors: isDark ? "#CBD5E1" : "#334155" },
         markers: { size: 6, strokeWidth: 0, shape: "circle" },
-        itemMargin: { horizontal: 8, vertical: 4 },
+        itemMargin: { horizontal: 10, vertical: 6 },
         formatter: (name, opts) => {
            const rate = donutData.rates[opts.seriesIndex];
-           return `${name} (${rate.toFixed(0)}%)`;
+           const cleanName = name.replace(/entrep[oô]t\s+/gi, "");
+           return `${cleanName} (${rate.toFixed(0)}%)`;
         }
       },
       tooltip: {
@@ -226,7 +241,7 @@ export default function WarehouseOccupancyInteractive() {
           </div>
           <div>
             <h3 className="text-base font-bold tracking-tight text-slate-800 dark:text-white">
-              Occupation interactive des entrepôts
+              État des Entrepôts
             </h3>
             <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
               Survole ou clique sur une section pour voir le détail
@@ -288,7 +303,7 @@ export default function WarehouseOccupancyInteractive() {
               options={donutOptions}
               series={donutData.rates}
               type="donut"
-              height={380}
+              height={650}
             />
 
             {/* Summary stats */}

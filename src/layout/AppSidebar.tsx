@@ -269,7 +269,7 @@ const AppSidebar: React.FC = () => {
 
               <Image
                 className="hidden dark:block object-contain dark:brightness-200"
-                src="/images/logo/logoOCT.png"
+                src="/images/logo/oct.webp"
                 alt="Logo"
                 width={160}
                 height={45}

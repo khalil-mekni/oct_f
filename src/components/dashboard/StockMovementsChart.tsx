@@ -239,10 +239,10 @@ export default function StockMovementsChart() {
           </div>
           <div>
             <h3 className="text-base font-bold tracking-tight text-slate-800 dark:text-white">
-              Activité des mouvements
+              Flux de Stock
             </h3>
             <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-              Suivi détaillé des flux et ajustements
+              Suivi détaillé des mouvements et ajustements
             </p>
           </div>
         </div>

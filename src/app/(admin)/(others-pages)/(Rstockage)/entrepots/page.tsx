@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 import {
   fetchEntrepots,
   createEntrepot,
@@ -52,6 +53,9 @@ export default function EntrepotsPage() {
 
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
+
+  const { user } = useAuth();
+  const isAdmin = user?.role === "ADMIN";
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -236,7 +240,7 @@ export default function EntrepotsPage() {
         count={filteredItems.length}
         query={search}
         setQuery={setSearch}
-        onOpenNew={handleOpenCreate}
+        onOpenNew={isAdmin ? handleOpenCreate : undefined}
         onRefresh={loadData}
         loading={loading}
       />
@@ -385,11 +389,11 @@ export default function EntrepotsPage() {
                 </div>
 
                 {loading ? (
-                  <EntrepotSkeleton />
+                  <EntrepotSkeleton isAdmin={isAdmin} />
                 ) : (
                   <EntrepotsListView
                     rows={paginatedItems}
-                    onEdit={handleOpenEdit}
+                    onEdit={isAdmin ? handleOpenEdit : undefined}
                     highlightedId={highlightedId}
                   />
                 )}

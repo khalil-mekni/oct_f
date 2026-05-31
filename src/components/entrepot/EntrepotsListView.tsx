@@ -134,7 +134,7 @@ export function EntrepotsListView({ rows, onEdit, highlightedId }: Props) {
             <th className="px-5 py-4">Taux</th>
             <th className="px-5 py-4 text-center">Lots</th>
             <th className="px-5 py-4 text-center">Statut</th>
-            <th className="px-5 py-4 text-right">Action</th>
+            {onEdit && <th className="px-5 py-4 text-right">Action</th>}
           </tr>
         </thead>
 
@@ -273,27 +273,29 @@ export function EntrepotsListView({ rows, onEdit, highlightedId }: Props) {
                   </td>
 
                   {/* Action */}
-                  <td
-                    className={`border-b border-gray-50 px-5 py-4 text-right dark:border-gray-800 ${
-                      isExpanded ? "border-b-0" : ""
-                    }`}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => onEdit?.(item)}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-gray-100 bg-white px-3.5 py-2 text-[10px] font-black uppercase tracking-widest text-gray-500 shadow-sm transition-all hover:border-[#00A09D]/20 hover:bg-[#00A09D]/5 hover:text-[#00A09D] dark:border-gray-700 dark:bg-gray-800"
+                  {onEdit && (
+                    <td
+                      className={`border-b border-gray-50 px-5 py-4 text-right dark:border-gray-800 ${
+                        isExpanded ? "border-b-0" : ""
+                      }`}
                     >
-                      <Pencil size={12} />
-                      Modifier
-                    </button>
-                  </td>
+                      <button
+                        type="button"
+                        onClick={() => onEdit?.(item)}
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-gray-100 bg-white px-3.5 py-2 text-[10px] font-black uppercase tracking-widest text-gray-500 shadow-sm transition-all hover:border-[#00A09D]/20 hover:bg-[#00A09D]/5 hover:text-[#00A09D] dark:border-gray-700 dark:bg-gray-800"
+                      >
+                        <Pencil size={12} />
+                        Modifier
+                      </button>
+                    </td>
+                  )}
                 </tr>
 
                 {/* ── Expanded lots ── */}
                 {isExpanded && (
                   <tr key={`${item.id}-lots`}>
                     <td
-                      colSpan={9}
+                      colSpan={onEdit ? 9 : 8}
                       className="border-b border-gray-50 bg-gray-50/40 px-5 pb-5 pt-0 dark:border-gray-800 dark:bg-gray-800/20"
                     >
                       {/* Lot sub-table */}

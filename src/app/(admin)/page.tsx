@@ -9,8 +9,8 @@ import StockageDashboard from "@/components/dashboard/dashboardRstockage/Stockag
 import ApprovisionnementDashboard from "@/components/dashboard/dashboardRd'appro/ApprovisionnementDashboard";
 import StockArchiveWidget from "@/components/dashboard/StockArchiveWidget";
 import OrdersFunnelWidget from "@/components/dashboard/OrdersFunnelWidget";
-import ContractsTimelineWidget from "@/components/dashboard/ContractsTimelineWidget";
 import DeliveryQuantitiesWidget from "@/components/dashboard/DeliveryQuantitiesWidget";
+import ContractFinancialDashboard from "@/components/dashboard/ContractFinancialDashboard";
 
 // ────────────────────────────────────────────────────────────────
 // Admin layout
@@ -25,14 +25,20 @@ function AdminDashboard() {
       {/* ── Procurement Workflow (Full Width) ── */}
       <OrdersFunnelWidget />
 
-      {/* ── Middle Section: Timeline & Quantities ── */}
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <ContractsTimelineWidget />
+      {/* ── Financial Pilotage (Full Width) ── */}
+      <ContractFinancialDashboard />
+
+      {/* ── Logistics Analysis: Deliveries (Full Width) ── */}
+      <div className="w-full">
         <DeliveryQuantitiesWidget />
       </div>
 
-      {/* ── Storage Section: Occupancy ── */}
-      <WarehouseOccupancyInteractive />
+      {/* ── Warehouse Operations ── */}
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
+        <div className="xl:col-span-12">
+          <WarehouseOccupancyInteractive />
+        </div>
+      </div>
 
       {/* ── Bottom Section: Trends & Archive ── */}
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">

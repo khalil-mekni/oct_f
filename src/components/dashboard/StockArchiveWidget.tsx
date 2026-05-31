@@ -75,7 +75,7 @@ export default function StockArchiveWidget() {
           </div>
           <div>
             <h3 className="text-base font-bold tracking-tight text-slate-800 dark:text-white">
-              Archive du stock
+              Archive des Stocks
             </h3>
             <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
               Mouvements sur les 7 derniers jours

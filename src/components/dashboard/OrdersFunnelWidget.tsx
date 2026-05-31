@@ -22,14 +22,6 @@ const COLORS = {
     bar: "bg-amber-500",
     gradient: "from-amber-500 to-amber-600",
   },
-  validated: {
-    bg: "from-emerald-50 to-emerald-100/50",
-    border: "border-emerald-200",
-    iconBg: "bg-emerald-100",
-    icon: "text-emerald-600",
-    bar: "bg-emerald-500",
-    gradient: "from-emerald-500 to-teal-600",
-  },
   partial: {
     bg: "from-blue-50 to-blue-100/50",
     border: "border-blue-200",
@@ -133,11 +125,11 @@ export default function OrdersFunnelWidget() {
     return (
       <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 p-6 animate-pulse h-[400px]">
         <div className="h-8 w-48 rounded-xl bg-slate-100 dark:bg-white/10 mb-8" />
-        <div className="grid grid-cols-4 gap-4 mb-8">
-           {[...Array(4)].map((_, i) => <div key={i} className="h-32 rounded-2xl bg-slate-50 dark:bg-white/5" />)}
+        <div className="grid grid-cols-3 gap-4 mb-8">
+           {[...Array(3)].map((_, i) => <div key={i} className="h-32 rounded-2xl bg-slate-50 dark:bg-white/5" />)}
         </div>
-        <div className="grid grid-cols-3 gap-4">
-           {[...Array(3)].map((_, i) => <div key={i} className="h-20 rounded-xl bg-slate-50 dark:bg-white/5" />)}
+        <div className="grid grid-cols-2 gap-4">
+           {[...Array(2)].map((_, i) => <div key={i} className="h-20 rounded-xl bg-slate-50 dark:bg-white/5" />)}
         </div>
       </div>
     );
@@ -153,11 +145,7 @@ export default function OrdersFunnelWidget() {
   }
 
   const completionRate = data.total > 0
-    ? ((data.received_count / data.total) * 100).toFixed(1)
-    : "0.0";
-  
-  const validationRate = data.total > 0
-    ? ((data.validated_count / data.total) * 100).toFixed(1)
+    ? (((data.received_count + data.validated_count) / data.total) * 100).toFixed(1)
     : "0.0";
   
   const partialRate = data.total > 0
@@ -175,10 +163,10 @@ export default function OrdersFunnelWidget() {
             </div>
             <div>
               <h3 className="text-base font-bold tracking-tight text-slate-800 dark:text-white">
-                Workflow des commandes
+                Suivi des Commandes
               </h3>
               <p className="text-xs text-slate-400">
-                Suivi opérationnel de l&apos;entonnoir de traitement
+                État d&apos;avancement du flux d&apos;approvisionnement
               </p>
             </div>
           </div>
@@ -195,20 +183,13 @@ export default function OrdersFunnelWidget() {
       {/* Body */}
       <div className="p-6 space-y-6">
         {/* Stages Row */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <StageCard 
             label="En attente" 
             value={data.pending} 
             total={data.total} 
             color="pending" 
             icon={Clock}
-          />
-          <StageCard 
-            label="Validée" 
-            value={data.validated_count} 
-            total={data.total} 
-            color="validated" 
-            icon={CircleCheck}
           />
           <StageCard 
             label="Partielle" 
@@ -219,7 +200,7 @@ export default function OrdersFunnelWidget() {
           />
           <StageCard 
             label="Réceptionnée" 
-            value={data.received_count} 
+            value={data.received_count + data.validated_count} 
             total={data.total} 
             color="received" 
             icon={Truck}
@@ -227,14 +208,7 @@ export default function OrdersFunnelWidget() {
         </div>
 
         {/* Analytical Metrics */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <MetricCard 
-            label="Taux de validation" 
-            value={`${validationRate}%`}
-            subtitle="Commandes prêtes"
-            color="#10B981" 
-            icon={TrendingUp}
-          />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <MetricCard 
             label="Réceptions partielles" 
             value={`${partialRate}%`}
@@ -257,19 +231,19 @@ export default function OrdersFunnelWidget() {
             <div>
               <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Progression Globale</p>
               <h4 className="text-xl font-black text-slate-800 dark:text-white mt-0.5">
-                {data.received_count} / {data.total} <span className="text-xs font-medium text-slate-400 ml-1 italic">commandes terminées</span>
+                {data.received_count + data.validated_count} / {data.total} <span className="text-xs font-medium text-slate-400 ml-1 italic">commandes terminées</span>
               </h4>
             </div>
             <div className="text-right">
               <span className="text-2xl font-black text-indigo-600 dark:text-indigo-400 leading-none">
-                {Math.round((data.received_count / data.total) * 100) || 0}%
+                {Math.round(((data.received_count + data.validated_count) / data.total) * 100) || 0}%
               </span>
             </div>
           </div>
           <div className="h-3 rounded-full overflow-hidden bg-slate-200 dark:bg-white/10">
             <div 
               className="h-full bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-500 rounded-full transition-all duration-1000 shadow-sm shadow-emerald-500/20"
-              style={{ width: `${(data.received_count / data.total) * 100}%` }}
+              style={{ width: `${((data.received_count + data.validated_count) / data.total) * 100}%` }}
             />
           </div>
         </div>

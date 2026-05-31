@@ -151,8 +151,8 @@ export default function OrdersWidget() {
             <ShoppingCart className="size-4 text-white" />
           </div>
           <div>
-            <h3 className="font-bold text-slate-800 dark:text-white">Gestion des commandes</h3>
-            <p className="text-xs text-slate-400">Suivi des commandes, réceptions et retards</p>
+            <h3 className="font-bold text-slate-800 dark:text-white">Suivi Détaillé des Commandes</h3>
+            <p className="text-xs text-slate-400">Analyse approfondie des réceptions et retards</p>
           </div>
         </div>
         <span className="flex items-center gap-1.5 rounded-full bg-blue-50 dark:bg-blue-500/10 px-3 py-1 text-[11px] font-bold text-blue-600 dark:text-blue-400">

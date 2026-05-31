@@ -6,7 +6,7 @@ interface Props {
   count: number;
   query: string;
   setQuery: (q: string) => void;
-  onOpenNew: () => void;
+  onOpenNew?: () => void;
   onRefresh?: () => void;
 }
 

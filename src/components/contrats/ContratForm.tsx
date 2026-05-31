@@ -2,7 +2,34 @@ import React from "react";
 import { X, Save, AlertCircle } from "lucide-react";
 
 export const ContratForm = ({ isOpen, editing, form, setForm, onClose, onSubmit, loading, fournisseurs, emballages, ocrRawText, }: any) => {
+  
+  React.useEffect(() => {
+    if (isOpen && !editing && (form.tva_rate === undefined || form.tva_rate === null)) {
+      setForm((prev: any) => ({ ...prev, tva_rate: 0.19 }));
+    }
+  }, [isOpen, editing, setForm]);
+
   if (!isOpen) return null;
+
+  const updateCalculations = (pu: any, qty: any, tvaRate: any) => {
+    const price = typeof pu === 'number' ? pu : (parseFloat(pu) || 0);
+    const quantity = typeof qty === 'number' ? qty : (parseFloat(qty) || 0);
+    const rate = typeof tvaRate === 'number' ? tvaRate : (parseFloat(tvaRate) || 0);
+    
+    const ht = price * quantity;
+    const tva = ht * rate;
+    const ttc = ht + tva;
+
+    setForm((prev: any) => ({
+      ...prev,
+      prix_unitaire: pu,
+      quantite_contractuelle: qty,
+      tva_rate: tvaRate,
+      montant_ht: ht,
+      montant_tva: tva,
+      montant_ttc: ttc
+    }));
+  };
 
   return (
     <>
@@ -136,18 +163,57 @@ export const ContratForm = ({ isOpen, editing, form, setForm, onClose, onSubmit,
             </div>
           </div>
 
+          {/* New Fields Layout */}
+          <div className="grid grid-cols-2 gap-8">
+            <NumberField
+              label="Prix Unitaire"
+              step="0.001"
+              value={form.prix_unitaire}
+              onChange={(v: any) => updateCalculations(v, form.quantite_contractuelle, form.tva_rate ?? 0.19)}
+            />
+            <NumberField
+              label="Qté Contractuelle"
+              value={form.quantite_contractuelle}
+              onChange={(v: any) => updateCalculations(form.prix_unitaire, v, form.tva_rate ?? 0.19)}
+            />
+          </div>
+
           <div className="grid grid-cols-2 gap-8">
             <NumberField
               label="Montant HT"
               step="0.001"
               value={form.montant_ht}
-              onChange={(v: any) => setForm({ ...form, montant_ht: v })}
+              readOnly
             />
+            <div className="space-y-3">
+              <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest ml-1">
+                TVA (%)
+              </label>
+              <select
+                value={form.tva_rate ?? 0.19}
+                onChange={(e) => updateCalculations(form.prix_unitaire, form.quantite_contractuelle, parseFloat(e.target.value))}
+                className="w-full rounded-2xl border-2 border-gray-50 bg-gray-50 p-4 text-xs font-black text-gray-900 outline-none focus:border-indigo-500/20 focus:bg-white transition-all appearance-none"
+              >
+                <option value={0.19}>19%</option>
+                <option value={0.07}>7%</option>
+                <option value={0.13}>13%</option>
+                <option value={0}>0%</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-8">
             <NumberField
               label="Montant TVA"
               step="0.001"
               value={form.montant_tva}
-              onChange={(v: any) => setForm({ ...form, montant_tva: v })}
+              readOnly
+            />
+            <NumberField
+              label="Montant TTC"
+              step="0.001"
+              value={form.montant_ttc}
+              readOnly
             />
           </div>
 
@@ -161,17 +227,12 @@ export const ContratForm = ({ isOpen, editing, form, setForm, onClose, onSubmit,
 
             <div className="grid grid-cols-2 gap-10">
               <NumberField
-                label="Qté Contractuelle"
-                value={form.quantite_contractuelle}
-                onChange={(v: any) => setForm({ ...form, quantite_contractuelle: v })}
-                big
-              />
-              <NumberField
                 label="Qté Réalisée"
                 value={form.quantite_realisee}
-                onChange={(v: any) => setForm({ ...form, quantite_realisee: v })}
+                readOnly
                 big
               />
+              <div />
             </div>
 
             <div className="grid grid-cols-2 gap-10">
@@ -208,23 +269,6 @@ export const ContratForm = ({ isOpen, editing, form, setForm, onClose, onSubmit,
               />
             </div>
           </div>
-          <div className="space-y-3">
-            <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest ml-1">
-              Prix Unitaire
-            </label>
-            <input
-              type="number"
-              step="0.001"
-              value={form.prix_unitaire ?? ""}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  prix_unitaire: e.target.value === "" ? "" : Number(e.target.value),
-                })
-              }
-              className="w-full rounded-2xl border-2 border-gray-50 bg-gray-50 p-4 text-xs font-black text-gray-900 outline-none focus:border-indigo-500/20 focus:bg-white transition-all"
-            />
-          </div>
         </form>
 
         <div className="p-12 border-t border-gray-50 bg-white flex items-center gap-6">
@@ -260,18 +304,19 @@ const InputField = ({ label, type, value, onChange }: any) => (
   </div>
 );
 
-const NumberField = ({ label, value, onChange, step = "0.01", big = false }: any) => (
+const NumberField = ({ label, value, onChange, step = "0.01", big = false, readOnly = false }: any) => (
   <div className="space-y-2">
     <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest">{label}</label>
     <input
       type="number"
       step={step}
       value={value ?? ""}
-      onChange={(e) => onChange(e.target.value === "" ? "" : Number(e.target.value))}
+      readOnly={readOnly}
+      onChange={(e) => !readOnly && onChange && onChange(e.target.value === "" ? "" : Number(e.target.value))}
       className={
         big
-          ? "w-full bg-transparent border-b-2 border-gray-200 py-2 text-3xl font-black outline-none focus:border-indigo-500 transition-all"
-          : "w-full rounded-2xl border-2 border-gray-50 bg-gray-50 p-4 text-xs font-black text-gray-900 outline-none focus:border-indigo-500/20 focus:bg-white transition-all"
+          ? `w-full bg-transparent border-b-2 ${readOnly ? 'border-gray-100' : 'border-gray-200'} py-2 text-3xl font-black outline-none focus:border-indigo-500 transition-all ${readOnly ? 'cursor-not-allowed opacity-60' : ''}`
+          : `w-full rounded-2xl border-2 border-gray-50 bg-gray-50 p-4 text-xs font-black text-gray-900 outline-none focus:border-indigo-500/20 focus:bg-white transition-all ${readOnly ? 'cursor-not-allowed opacity-60' : ''}`
       }
     />
   </div>

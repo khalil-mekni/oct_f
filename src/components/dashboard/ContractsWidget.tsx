@@ -108,7 +108,7 @@ export default function ContractsWidget() {
             <FileText className="size-4 text-white" />
           </div>
           <div>
-            <h3 className="font-bold text-slate-800 dark:text-white">Contrats</h3>
+            <h3 className="font-bold text-slate-800 dark:text-white">État des Contrats</h3>
             <p className="text-xs text-slate-400">Synthèse &amp; suivi des échéances</p>
           </div>
         </div>

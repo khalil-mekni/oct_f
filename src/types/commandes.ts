@@ -1,6 +1,5 @@
 export type CommandeStatut =
   | "EN_ATTENTE"
-  | "VALIDEE"
   | "PARTIELLEMENT_RECEPTIONNEE"
   | "RECEPTIONNEE"
   | "ANNULEE";
