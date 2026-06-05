@@ -49,70 +49,16 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   {
-    icon: <GridIcon />,
-    name: "Dashboard",
-    path: "/",
-    roles: ["ADMIN", "RESPONSABLE_APPROVISIONNEMENT", "RESPONSABLE_STOCKAGE"],
-  },
-  {
-    icon: <Users />,
-    name: "Fournisseurs",
-    path: "/fournisseurs",
-    roles: ["ADMIN", "RESPONSABLE_APPROVISIONNEMENT"],
-  },
-  {
-    icon: <PageIcon />,
-    name: "Contrats",
-    path: "/contrats",
-    roles: ["ADMIN", "RESPONSABLE_APPROVISIONNEMENT"],
-  },
-  {
-    icon: <ShoppingCart />,
-    name: "Commandes",
-    path: "/commandes",
-    roles: ["ADMIN", "RESPONSABLE_APPROVISIONNEMENT"],
-  },
-  {
-    icon: <Truck />,
-    name: "Bon Livraisons",
-    path: "/bon-livraisons",
-    roles: ["ADMIN", "RESPONSABLE_APPROVISIONNEMENT"],
-  },
-  {
-    icon: <Receipt />,
-    name: "Factures",
-    path: "/factures",
-    roles: ["ADMIN", "RESPONSABLE_APPROVISIONNEMENT"],
-  },
-  {
     icon: <BoxCubeIcon />,
-    name: "Entrepots",
+    name: "Entrepot Dashboard",
     path: "/entrepots",
     roles: ["ADMIN", "RESPONSABLE_STOCKAGE"],
   },
   {
     icon: <GridIcon />,
-    name: "Stocks",
-    path: "/stocks",
-    roles: ["ADMIN", "RESPONSABLE_STOCKAGE"],
-  },
-  {
-    icon: <Boxes />,
-    name: "Stock Inventaire",
-    path: "/stock-inventaire",
-    roles: ["ADMIN", "RESPONSABLE_STOCKAGE"],
-  },
-  {
-    icon: <ArrowLeftRight />,
-    name: "Mouvements de stock",
-    path: "/mouvements",
-    roles: ["ADMIN", "RESPONSABLE_STOCKAGE"],
-  },
-  {
-    icon: <BoxCubeIcon />,
-    name: "Emballages",
-    path: "/emballages",
-    roles: ["ADMIN", "RESPONSABLE_APPROVISIONNEMENT",],
+    name: "Dashboard",
+    path: "/",
+    roles: ["ADMIN", "RESPONSABLE_APPROVISIONNEMENT", "RESPONSABLE_STOCKAGE"],
   },
   {
     icon: <UserCog />,
@@ -121,16 +67,10 @@ const navItems: NavItem[] = [
     roles: ["ADMIN"],
   },
   {
-    icon: <CalenderIcon />,
-    name: "Calendar",
-    path: "/calendar",
-    roles: ["ADMIN"],
-  },
-  {
-    icon: <PieChartIcon />,
-    name: "Analytics",
-    path: "/prediction",
-    roles: ["ADMIN"],
+    icon: <BrainCircuit />,
+    name: "Prediction et recommandation",
+    path: "/prediction-emballage",
+    roles: ["ADMIN", "RESPONSABLE_APPROVISIONNEMENT", "RESPONSABLE_STOCKAGE"],
   },
   {
     icon: <UserCircleIcon />,
@@ -138,14 +78,71 @@ const navItems: NavItem[] = [
     path: "/profile",
     roles: ["ADMIN", "RESPONSABLE_APPROVISIONNEMENT", "RESPONSABLE_STOCKAGE"],
   },
-
-
-
   {
-    icon: <BrainCircuit />,
-    name: "prédiction & recommandation",
-    path: "/prediction-emballage",
-    roles: ["ADMIN", "RESPONSABLE_APPROVISIONNEMENT", "RESPONSABLE_STOCKAGE"],
+    icon: <Users />,
+    name: "Fournisseurs",
+    path: "/fournisseurs",
+    roles: ["RESPONSABLE_APPROVISIONNEMENT"],
+  },
+  {
+    icon: <PageIcon />,
+    name: "Contrats",
+    path: "/contrats",
+    roles: ["RESPONSABLE_APPROVISIONNEMENT"],
+  },
+  {
+    icon: <ShoppingCart />,
+    name: "Commandes",
+    path: "/commandes",
+    roles: ["RESPONSABLE_APPROVISIONNEMENT"],
+  },
+  {
+    icon: <Truck />,
+    name: "Bon Livraisons",
+    path: "/bon-livraisons",
+    roles: ["RESPONSABLE_APPROVISIONNEMENT"],
+  },
+  {
+    icon: <Receipt />,
+    name: "Factures",
+    path: "/factures",
+    roles: ["RESPONSABLE_APPROVISIONNEMENT"],
+  },
+  {
+    icon: <GridIcon />,
+    name: "Stocks",
+    path: "/stocks",
+    roles: ["RESPONSABLE_STOCKAGE"],
+  },
+  {
+    icon: <Boxes />,
+    name: "Stock Inventaire",
+    path: "/stock-inventaire",
+    roles: ["RESPONSABLE_STOCKAGE"],
+  },
+  {
+    icon: <ArrowLeftRight />,
+    name: "Mouvements de stock",
+    path: "/mouvements",
+    roles: ["RESPONSABLE_STOCKAGE"],
+  },
+  {
+    icon: <BoxCubeIcon />,
+    name: "Emballages",
+    path: "/emballages",
+    roles: ["RESPONSABLE_APPROVISIONNEMENT"],
+  },
+  {
+    icon: <CalenderIcon />,
+    name: "Calendar",
+    path: "/calendar",
+    roles: [],
+  },
+  {
+    icon: <PieChartIcon />,
+    name: "Analytics",
+    path: "/prediction",
+    roles: [],
   },
 ];
 

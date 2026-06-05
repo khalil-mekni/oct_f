@@ -35,16 +35,46 @@ export const CONTRAT_FIELDS = `
 `;
 
 
+export type ContratsPaginatorInfo = {
+  currentPage: number;
+  lastPage: number;
+  total: number;
+};
+
 const LIST_CONTRATS = `
-  query {
+  query ListContrats($page: Int, $first: Int) {
+    contrats(page: $page, first: $first) {
+      data {
+        ${CONTRAT_FIELDS}
+      }
+      paginatorInfo {
+        currentPage
+        lastPage
+        total
+      }
+    }
+  }
+`;
+
+export async function listContrats(page: number = 1, first: number = 10) {
+  return graphqlRequest<{ 
+    contrats: { 
+      data: Contrat[]; 
+      paginatorInfo: ContratsPaginatorInfo 
+    } 
+  }>(LIST_CONTRATS, { page, first });
+}
+
+const REFRESH_CONTRAT_STATUTS = `
+  query RefreshContratStatuts {
     refreshContratStatuts {
       ${CONTRAT_FIELDS}
     }
   }
 `;
 
-export async function listContrats() {
-  return graphqlRequest<{ refreshContratStatuts: Contrat[] }>(LIST_CONTRATS);
+export async function refreshContratStatuts() {
+  return graphqlRequest<{ refreshContratStatuts: Contrat[] }>(REFRESH_CONTRAT_STATUTS);
 }
 
 const CREATE_CONTRAT = `

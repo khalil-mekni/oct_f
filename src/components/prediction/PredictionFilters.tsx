@@ -32,24 +32,22 @@ type Props = {
 };
 
 const EMBALLAGES = [
-  { id: 1, label: "Thé Vert Supérieur 100g" },
-  { id: 2, label: "Thé Vert Supérieur 250g" },
+  { id: 1, label: "Carton Thé Vert Supérieur 100g" },
+  { id: 2, label: "Sac Riz Blanc" },
   { id: 3, label: "Sucre Blanc" },
   { id: 4, label: "Riz Étuvé" },
-  { id: 5, label: "Thé Noir Extra Plus 100g" },
-  { id: 6, label: "Thé Noir Extra 250g" },
+  { id: 5, label: "Sac Riz Basmati" },
+  { id: 6, label: "Sac Complexe" },
   { id: 7, label: "Rouleaux Adhésifs" },
-  { id: 8, label: "TNCeylon 150 G" },
-  { id: 9, label: "Carton Riz Étuvé" },
-  { id: 10, label: "Complexe Riz Basmati" },
-  { id: 11, label: "Carton Sucre Blanc" },
-  { id: 12, label: "TVBourgeon 250 G" },
-  { id: 13, label: "TVSuperieur 100 G" },
-  { id: 14, label: "TVSuperieur 250 G" },
-  { id: 15, label: "Thermo 200µ" },
-  { id: 16, label: "Thermo 500µ" },
-  { id: 17, label: "Étirable" },
-  { id: 18, label: "Étirable GINOR" },
+  { id: 8, label: "Thé Noir Ceylon 150g" },
+  { id: 9, label: "Thé Noir Extra 250g" },
+  { id: 10, label: "Thé Noir Extra Plus 100g" },
+  { id: 11, label: "Thé Noir Extra Plus 250g" },
+  { id: 12, label: "Thé Vert Bourgeon 250g" },
+  { id: 15, label: "Film Thermo 200µ" },
+  { id: 16, label: "Film Thermo 500µ" },
+  { id: 17, label: "Film Étirable" },
+  { id: 18, label: "Film Étirable GINOR" },
 ];
 
 export const ENTREPOTS = [

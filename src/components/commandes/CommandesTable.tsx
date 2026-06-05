@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import OcrUploadButton from "@/components/common/OcrUploadButton";
 import OcrUploadModal from "@/components/common/OcrUploadModal";
-import { OcrCommandeMappedData } from "@/types/ocr";
 import { Upload } from "lucide-react";
 type Id = string | number;
 
@@ -222,6 +221,14 @@ export default function CommandesTable({
 
   useEffect(() => { setRows(data); }, [data]);
 
+  useEffect(() => {
+    if (pagination.currentPage > pagination.lastPage && pagination.lastPage > 0) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("page", pagination.lastPage.toString());
+      router.replace(`${pathname}?${params.toString()}`);
+    }
+  }, [pagination, searchParams, router, pathname]);
+
   const emballagesMap = useMemo(() => new Map(emballages.map((x) => [String(x.id), x.label])), [emballages]);
   const entrepotsMap = useMemo(() => new Map(entrepots.map((x) => [String(x.id), x.label])), [entrepots]);
   const fournisseursMap = useMemo(() => new Map(fournisseurs.map((x) => [String(x.id), x.label])), [fournisseurs]);
@@ -396,51 +403,7 @@ export default function CommandesTable({
       fournisseursMap.get(String(r.fournisseur_id))?.toLowerCase().includes(query.toLowerCase())
     );
   }, [rows, query, fournisseursMap]);
-  function applyOcrToCommandeForm(data: OcrCommandeMappedData) {
-    setEditing(null);
-    setErrorMessage("");
-
-    setForm((prev) => {
-      const updated = { ...prev };
-
-      if (data.date_livraison_prevue) {
-        updated.date_livraison_prevue = normalizeDateForInput(
-          data.date_livraison_prevue
-        );
-      }
-
-      if (data.quantite !== undefined && data.quantite !== null) {
-        updated.quantite = String(data.quantite);
-      }
-
-      if (data.emballage_nom) {
-        const id = findOptionIdByLabel(emballages, data.emballage_nom);
-        if (id) {
-          updated.emballage_id = id;
-        }
-      }
-
-      if (data.fournisseur_nom) {
-        const id = findOptionIdByLabel(fournisseurs, data.fournisseur_nom);
-        if (id) {
-          updated.fournisseur_id = id;
-        }
-      }
-
-      if (data.entrepot_nom) {
-        const id = findOptionIdByLabel(entrepots, data.entrepot_nom);
-        if (id) {
-          updated.entrepot_id = id;
-        }
-      }
-
-      updated.statut = "EN_ATTENTE";
-
-      return updated;
-    });
-
-    setIsDrawerOpen(true);
-  }
+  
   function normalizeDateForInput(value?: string | null) {
     if (!value) return "";
 
@@ -478,11 +441,7 @@ export default function CommandesTable({
           </div>
 
 
-          <OcrUploadButton
-            onClick={() => setIsOcrOpen(true)}
-            label={<Upload className="h-4 w-4" />}
-            className="bg-white text-gray-900 border-2 border-gray-900 px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-900 hover:text-white transition-all shadow-[8px_8px_0px_rgba(0,160,157,0.2)]"
-          />
+          
 
           <button
             onClick={openNew}
@@ -575,15 +534,7 @@ export default function CommandesTable({
           );
         })}
       </div>
-      <OcrUploadModal<OcrCommandeMappedData>
-        open={isOcrOpen}
-        onClose={() => setIsOcrOpen(false)}
-        entityType="commande"
-        onUseData={(data, rawText) => {
-          setOcrRawText(rawText || "");
-          applyOcrToCommandeForm(data);
-        }}
-      />
+      
 
       {/* TABLE SECTION */}
       <div className="overflow-hidden rounded-[2.5rem] border border-gray-100 bg-white shadow-2xl shadow-gray-200/40">

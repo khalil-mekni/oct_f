@@ -3,13 +3,11 @@ import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import CommandesTable from "@/components/commandes/CommandesTable";
 import { listCommandes, normalizeCommande } from "@/lib/commandes.api";
 import { listEmballages } from "@/lib/emballages.api";
-import { fetchEntrepots } from "@/lib/entrepot.api";
+import { fetchEntrepots, Entrepot } from "@/lib/entrepot.api";
 import {
   listFournisseurs
 } from "@/lib/fournisseurs.api";
-
-import {normalizeFournisseur } from "@/types/fournisseur";
-
+import { Fournisseur, normalizeFournisseur } from "@/types/fournisseur";
 import { listContrats } from "@/lib/contrats.api";
 import {
   ContratForCommande,
@@ -18,6 +16,8 @@ import {
   FournisseurOption,
   TableCommande,
 } from "@/types/commandes";
+import { Contrat } from "@/types/contrat";
+import { Emballages } from "@/types/emballage";
 
 type PageProps = {
   searchParams?: Promise<{
@@ -40,19 +40,18 @@ export default async function CommandesPage({ searchParams }: PageProps) {
     listEmballages(1, 100),
     fetchEntrepots(),
     listFournisseurs(),
-    listContrats(),
+    listContrats(1, 100),
   ]);
 
   const rows: TableCommande[] =
     commandesResult.commandes.data.map(normalizeCommande);
 
   const emballages: EmballageOption[] =
-    emballagesResult.emballages.data.map((item: any) => ({
+    emballagesResult.emballages.data.map((item: Emballages) => ({
       id: item.id,
       label: `${item.code} - ${item.name}`,
     }));
-
-  const entrepots: EntrepotOption[] = entrepotsResult.map((item) => ({
+  const entrepots: EntrepotOption[] = entrepotsResult.map((item: Entrepot) => ({
     id: item.id,
     label: item.nom,
     capacite_totale: item.capacite_totale,
@@ -61,7 +60,7 @@ export default async function CommandesPage({ searchParams }: PageProps) {
   }));
 
   const fournisseurs: FournisseurOption[] =
-    fournisseursResult.fournisseurs.map((item: any) => {
+    fournisseursResult.fournisseurs.map((item: Fournisseur) => {
       const normalized = normalizeFournisseur(item);
       return {
         id: normalized.id,
@@ -69,7 +68,7 @@ export default async function CommandesPage({ searchParams }: PageProps) {
       };
     });
 
-  const contrats: ContratForCommande[] = contratsResult.refreshContratStatuts.map((item) => ({
+  const contrats: ContratForCommande[] = contratsResult.contrats.data.map((item: Contrat) => ({
     id: item.id,
     numero_contrat: item.numero_contrat,
     fournisseur_id: item.fournisseur_id,

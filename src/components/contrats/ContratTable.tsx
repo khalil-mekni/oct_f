@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ContratHeader } from "./ContratHeader";
 import { ContratListView } from "./ContratListView";
 import { ContratForm } from "./ContratForm";
+import Pagination from "@/components/tables/Pagination";
 import {
   createContrat,
   updateContrat,
@@ -16,6 +18,7 @@ import { TableEmballages } from "@/types/emballage";
 import { TableFournisseur } from "@/types/fournisseur";
 import OcrUploadModal from "@/components/common/OcrUploadModal";
 import { OcrContratMappedData } from "@/types/ocr";
+import { ContratsPaginatorInfo } from "@/lib/contrats.api";
 
 type NumericInput = number | "";
 type ContratStatus = "ACTIF" | "EXPIRE" | "SUSPENDU";
@@ -44,38 +47,6 @@ type ContratFormState = {
   fournisseur?: TableFournisseur;
   emballage?: TableEmballages;
 };
-
-const LocalPagination = ({
-  currentPage,
-  totalPages,
-  onPageChange,
-}: {
-  currentPage: number;
-  totalPages: number;
-  onPageChange: (p: number) => void;
-}) => (
-  <div className="flex items-center gap-4">
-    <button
-      onClick={() => onPageChange(currentPage - 1)}
-      disabled={currentPage === 1}
-      className="px-4 py-2 text-xs font-bold uppercase tracking-widest bg-white border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-30 transition-all shadow-sm"
-    >
-      Précédent
-    </button>
-
-    <div className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-x px-6 border-gray-100">
-      Page {currentPage} sur {totalPages}
-    </div>
-
-    <button
-      onClick={() => onPageChange(currentPage + 1)}
-      disabled={currentPage === totalPages}
-      className="px-4 py-2 text-xs font-bold uppercase tracking-widest bg-white border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-30 transition-all shadow-sm"
-    >
-      Suivant
-    </button>
-  </div>
-);
 
 function normalizeText(value?: string | null) {
   return (value || "")
@@ -228,18 +199,23 @@ function extractFromRawText(rawText: string): Partial<OcrContratMappedData> {
   return result;
 }
 
-export default function ContratTable({ data }: { data?: TableContrat[] }) {
-  const [rows, setRows] = useState<TableContrat[]>(
-    data ? data.map(normalizeContrat) : []
-  );
+export default function ContratTable({ 
+  data,
+  pagination,
+}: { 
+  data: TableContrat[];
+  pagination: ContratsPaginatorInfo;
+}) {
+  const [rows, setRows] = useState<TableContrat[]>(data);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [editing, setEditing] = useState<TableContrat | null>(null);
   const [query, setQuery] = useState("");
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 6;
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
 
   const [fournisseurs, setFournisseurs] = useState<TableFournisseur[]>([]);
   const [emballages, setEmballages] = useState<TableEmballages[]>([]);
@@ -288,6 +264,16 @@ export default function ContratTable({ data }: { data?: TableContrat[] }) {
     loadRefs();
   }, []);
 
+  useEffect(() => { setRows(data); }, [data]);
+
+  useEffect(() => {
+    if (pagination.currentPage > pagination.lastPage && pagination.lastPage > 0) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("page", pagination.lastPage.toString());
+      router.replace(`${pathname}?${params.toString()}`);
+    }
+  }, [pagination, searchParams, router, pathname]);
+
   const filteredRows = useMemo(() => {
     const q = query.toLowerCase();
 
@@ -300,17 +286,6 @@ export default function ContratTable({ data }: { data?: TableContrat[] }) {
       return numeroContrat.includes(q) || raisonSociale.includes(q);
     });
   }, [rows, query]);
-
-  const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
-
-  const paginatedRows = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return filteredRows.slice(start, start + itemsPerPage);
-  }, [filteredRows, currentPage]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [query]);
 
   const stats = useMemo(() => {
     const total = rows.length;
@@ -624,7 +599,7 @@ export default function ContratTable({ data }: { data?: TableContrat[] }) {
 
       <div className="flex-1">
         <ContratListView
-          rows={paginatedRows}
+          rows={filteredRows}
           onEdit={(c) => {
             setEditing(c);
             setForm(mapContratToForm(c));
@@ -640,15 +615,17 @@ export default function ContratTable({ data }: { data?: TableContrat[] }) {
         />
       </div>
 
-      {totalPages > 1 && (
-        <div className="mt-4 flex justify-center items-center py-6 bg-white rounded-[2rem] border border-gray-50 shadow-sm animate-in fade-in zoom-in-95 duration-300">
-          <LocalPagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
+      <div className="border-t border-gray-50 p-6 flex justify-center">
+          <Pagination
+            currentPage={pagination.currentPage}
+            totalPages={pagination.lastPage}
+            onPageChange={(page) => {
+              const params = new URLSearchParams(searchParams.toString());
+              params.set("page", page.toString());
+              router.push(`${pathname}?${params.toString()}`);
+            }}
           />
         </div>
-      )}
 
       <OcrUploadModal<OcrContratMappedData>
         open={isOcrOpen}

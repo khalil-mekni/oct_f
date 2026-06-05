@@ -34,7 +34,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { useContractsWidget } from "@/hooks/useContractsWidget";
-import { useContrats } from "@/hooks/useContrats";
+import { useRefreshContratStatuts } from "@/hooks/useContrats";
 import { Contrat } from "@/types/contrat";
 import Badge from "../ui/badge/Badge";
 import { useRouter } from "next/navigation";
@@ -95,7 +95,7 @@ const MetricCard = ({ title, value, subValue, icon: Icon, colorClass, delay = 0 
 export default function ContractFinancialDashboard() {
   const router = useRouter();
   const { data: widgetData, isLoading: widgetLoading } = useContractsWidget();
-  const { data: contratsData, isLoading: contratsLoading } = useContrats();
+  const { data: contratsData, isLoading: contratsLoading } = useRefreshContratStatuts();
   const [showAll, setShowAll] = useState(false);
 
   const contrats = useMemo(() => {
