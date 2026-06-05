@@ -41,7 +41,7 @@ import { useRouter } from "next/navigation";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 const formatDT = (val: number) =>
-  new Intl.NumberFormat("fr-TN", { style: "currency", currency: "TND", maximumFractionDigits: 3 }).format(val);
+  new Intl.NumberFormat("fr-TN", { style: "currency", currency: "TND", maximumFractionDigits: 0 }).format(val);
 
 const calculateExecutionRate = (realisee: number, contractuelle: number) => {
   if (!contractuelle) return 0;
@@ -109,11 +109,20 @@ export default function ContractFinancialDashboard() {
   }, [contratsData]);
   
   const stats = useMemo(() => {
-    if (!contrats.length) return null;
+    if (!contrats.length) return {
+      totalAmount: 0,
+      totalConsumed: 0,
+      remainingBudget: 0,
+      globalExecutionRate: 0,
+    };
 
-    const totalAmount = contrats.reduce((sum, c) => sum + (c.montant_ht || 0), 0);
+    const totalAmount = contrats.reduce((sum, c) => {
+        const amount = Number(c.montant_ht) || (Number(c.quantite_contractuelle || 0) * Number(c.prix_unitaire || 0));
+        return sum + amount;
+    }, 0);
+
     const totalConsumed = contrats.reduce((sum, c) => {
-        const consumed = (c.quantite_realisee || 0) * (c.prix_unitaire || 0);
+        const consumed = Number(c.quantite_realisee || 0) * Number(c.prix_unitaire || 0);
         return sum + consumed;
     }, 0);
     

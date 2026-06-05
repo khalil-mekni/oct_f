@@ -6,6 +6,7 @@ import { normalizeEmballages } from "@/types/emballage";
 
 export default function EmballagesFormModal({ editing, setRows, onClose }: any) {
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const [form, setForm] = useState(editing || {
     code: "", name: "", type: "", material: "", status: "ACTIVE", description: "", min_stock: 0,
     poids: 0, largeur: 0, epaisseur_pp: 0, epaisseur_ppc: 0,
@@ -13,27 +14,34 @@ export default function EmballagesFormModal({ editing, setRows, onClose }: any) 
   });
 
   const handleSubmit = async () => {
-    // Validation
-    if (!form.name || form.name.trim() === "") {
-      alert("Le champ 'Désignation Commerciale' est obligatoire.");
-      return;
-    }
-    if (!form.code || form.code.trim() === "") {
-      alert("Le champ 'Code Interne' est obligatoire.");
-      return;
-    }
-    if (!form.type || form.type.trim() === "") {
-      alert("Le champ 'Type' est obligatoire.");
+    setErrorMessage("");
+
+    // Validation de tous les champs
+    if (
+      !form.name?.trim() ||
+      !form.code?.trim() ||
+      !form.type?.trim() ||
+      !form.material?.trim() ||
+      !form.description?.trim() ||
+      form.min_stock === undefined || form.min_stock === "" ||
+      form.poids === undefined || form.poids === "" ||
+      form.largeur === undefined || form.largeur === "" ||
+      form.epaisseur_pp === undefined || form.epaisseur_pp === "" ||
+      form.epaisseur_ppc === undefined || form.epaisseur_ppc === "" ||
+      form.capacity_value === undefined || form.capacity_value === "" ||
+      !form.capacity_unit
+    ) {
+      setErrorMessage("Veuillez remplir tous les champs obligatoires.");
       return;
     }
 
-    if (form.min_stock !== "" && Number(form.min_stock) < 0) {
-      alert("Le stock minimum ne peut pas être négatif.");
+    if (Number(form.min_stock) < 0) {
+      setErrorMessage("Le stock minimum ne peut pas être négatif.");
       return;
     }
 
-    if (form.capacity_value !== "" && Number(form.capacity_value) <= 0) {
-      alert("La capacité doit être supérieure à 0.");
+    if (Number(form.capacity_value) <= 0) {
+      setErrorMessage("La capacité doit être supérieure à 0.");
       return;
     }
 
@@ -99,6 +107,14 @@ export default function EmballagesFormModal({ editing, setRows, onClose }: any) 
 
         {/* BODY SCROLLABLE */}
         <div className="flex-1 overflow-y-auto px-12 py-6 space-y-10">
+          {errorMessage && (
+            <div className="flex items-center gap-3 rounded-2xl border-2 border-red-100 bg-red-50 p-5 text-[11px] font-black text-red-600 uppercase tracking-wider animate-shake">
+              <svg className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              {errorMessage}
+            </div>
+          )}
 
           {/* NOM */}
           <div className="border-b-4 border-gray-50 focus-within:border-indigo-500 pb-4 transition-all">

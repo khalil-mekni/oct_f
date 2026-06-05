@@ -88,17 +88,33 @@ export default function EntrepotsFormModal({
   onClose,
   saving,
 }: EntrepotsFormModalProps) {
+  const [errorMessage, setErrorMessage] = useState("");
   const [form, setForm] = useState<Partial<Entrepot>>(
     editing ?? {
       nom: "",
       adresse: "",
       capacite_totale: undefined,
       capacite_disponible: undefined,
-      statut: "ACTIf",
+      statut: "ACTIF",
     }
   );
 
   const isEditing = !!editing;
+
+  const handleLocalSave = () => {
+    setErrorMessage("");
+    if (
+      !form.nom?.trim() ||
+      !form.adresse?.trim() ||
+      form.capacite_totale === undefined ||
+      form.capacite_disponible === undefined ||
+      !form.statut
+    ) {
+      setErrorMessage("Veuillez remplir tous les champs obligatoires.");
+      return;
+    }
+    onSave(form);
+  };
 
   return (
     <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
@@ -140,6 +156,12 @@ export default function EntrepotsFormModal({
 
         {/* Body */}
         <div className="space-y-5 px-7 py-6">
+          {errorMessage && (
+            <div className="flex items-center gap-3 rounded-xl border border-red-100 bg-red-50 p-4 text-[10px] font-black uppercase text-red-600">
+              <AlertCircle size={14} className="shrink-0" /> {errorMessage}
+            </div>
+          )}
+
           {/* Nom */}
           <InputField
             label="Nom de l'entrepôt"
@@ -157,6 +179,7 @@ export default function EntrepotsFormModal({
             onChange={(v) => setForm({ ...form, adresse: v })}
             placeholder="Ex : 42 Rue de la Logistique, Tunis"
             icon={<MapPin size={15} />}
+            required
           />
 
           {/* Capacités */}
@@ -173,6 +196,7 @@ export default function EntrepotsFormModal({
               }
               placeholder="Ex : 10 000"
               icon={<Layers3 size={15} />}
+              required
             />
 
             <InputField
@@ -187,12 +211,13 @@ export default function EntrepotsFormModal({
               }
               placeholder="Ex : 2 500"
               icon={<Layers3 size={15} />}
+              required
             />
           </div>
 
           {/* Statut */}
           <div>
-            <Label icon={<Activity size={12} />}>Statut</Label>
+            <Label icon={<Activity size={12} />} required>Statut</Label>
             <div className="flex gap-3">
               {(["ACTIF", "INACTIF"] as const).map((status) => {
                 const isSelected = (form.statut ?? "ACTIF") === status;
@@ -229,7 +254,7 @@ export default function EntrepotsFormModal({
                   Aperçu occupation
                 </span>
                 <span className="text-xs font-black text-[#1C2434] dark:text-white">
-                  {form.capacite_disponible
+                  {form.capacite_disponible !== undefined
                     ? Math.round(
                         ((form.capacite_totale - form.capacite_disponible) /
                           form.capacite_totale) *
@@ -244,7 +269,7 @@ export default function EntrepotsFormModal({
                   className="h-full rounded-full bg-[#00A09D] transition-all duration-500"
                   style={{
                     width: `${
-                      form.capacite_disponible
+                      form.capacite_disponible !== undefined
                         ? Math.min(
                             ((form.capacite_totale - form.capacite_disponible) /
                               form.capacite_totale) *
@@ -273,8 +298,8 @@ export default function EntrepotsFormModal({
 
           <button
             type="button"
-            disabled={saving || !form.nom?.trim()}
-            onClick={() => onSave(form)}
+            disabled={saving}
+            onClick={handleLocalSave}
             className="flex items-center gap-2 rounded-xl bg-[#00A09D] px-6 py-2.5 text-[10px] font-black uppercase tracking-widest text-white shadow-sm transition-all hover:bg-[#1C2434] disabled:opacity-40"
           >
             {saving ? (

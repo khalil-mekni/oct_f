@@ -1,7 +1,7 @@
 import React from "react";
 import { X, Save, AlertCircle } from "lucide-react";
 
-export const ContratForm = ({ isOpen, editing, form, setForm, onClose, onSubmit, loading, fournisseurs, emballages, ocrRawText, }: any) => {
+export const ContratForm = ({ isOpen, editing, form, setForm, onClose, onSubmit, loading, fournisseurs, emballages, ocrRawText, errorMessage, }: any) => {
   
   React.useEffect(() => {
     if (isOpen && !editing && (form.tva_rate === undefined || form.tva_rate === null)) {
@@ -54,6 +54,15 @@ export const ContratForm = ({ isOpen, editing, form, setForm, onClose, onSubmit,
             <X />
           </button>
         </div>
+
+        <div className="px-12">
+          {errorMessage && (
+            <div className="flex items-center gap-3 rounded-[1.5rem] border-2 border-red-100 bg-red-50 p-5 text-[11px] font-black text-red-600 uppercase tracking-wider animate-shake">
+              <AlertCircle className="h-5 w-5 shrink-0" /> {errorMessage}
+            </div>
+          )}
+        </div>
+
         {ocrRawText && !editing && (
           <div className="rounded-[2rem] border border-indigo-100 bg-indigo-50/40 p-4">
             <div className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500">

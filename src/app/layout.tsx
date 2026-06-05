@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   title: "OCT",
   description: "Office du Commerce de la Tunisie",
   icons: {
-    icon: "/images/logo/oct.webp",
+    icon: "/images/logo/logooct.png",
   },
 };
 

@@ -197,6 +197,18 @@ export default function BonLivraisonsTable({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    if (
+      !form.numero_commande ||
+      !form.emballage_id ||
+      !form.entrepot_id ||
+      !form.date_reception ||
+      !form.quantite_recue
+    ) {
+      setErrorMessage("Veuillez remplir tous les champs obligatoires.");
+      return;
+    }
+
     if (Number(form.quantite_recue) > remainingQuantity) {
       setErrorMessage(`Quantité dépasse le reste à livrer (${remainingQuantity})`);
       return;

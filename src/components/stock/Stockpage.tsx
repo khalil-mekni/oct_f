@@ -7,7 +7,7 @@ import { toDateTimeLocalInputValue, toGraphqlDateTime } from "./stock.util";
 import StockStatCards from "./Stockstatcards";
 import StockFiltersPanel from "./Stockfilterspanel";
 import StockTable from "./Stocktable ";
-import StockPagination from "./Stockpagination";
+import Pagination from "@/components/tables/Pagination";
 import {
   BarChart2,
   Download,
@@ -44,7 +44,7 @@ export default function StockPage() {
   const [sortKey, setSortKey] = useState<SortKey>("date_stock");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(25);
+  const [perPage, setPerPage] = useState(10);
 
   // ── Data ──────────────────────────────────────────────────────────────────────
 
@@ -129,11 +129,17 @@ export default function StockPage() {
   const sorted = useMemo(() => {
     return [...filtered].sort((a, b) => {
       let cmp = 0;
-      if (sortKey === "date_stock")
-        cmp =
-          new Date(a.date_stock).getTime() - new Date(b.date_stock).getTime();
-      else if (sortKey === "quantite")
+      if (sortKey === "date_stock") {
+        cmp = new Date(a.date_stock).getTime() - new Date(b.date_stock).getTime();
+        // Secondary sort by created_at descending if dates are equal
+        if (cmp === 0) {
+          const ca = new Date(a.created_at ?? 0).getTime();
+          const cb = new Date(b.created_at ?? 0).getTime();
+          cmp = ca - cb;
+        }
+      } else if (sortKey === "quantite") {
         cmp = Number(a.quantite) - Number(b.quantite);
+      }
       return sortDir === "asc" ? cmp : -cmp;
     });
   }, [filtered, sortKey, sortDir]);
@@ -299,16 +305,13 @@ export default function StockPage() {
           />
 
           {/* Pagination */}
-          <StockPagination
-            page={page}
-            perPage={perPage}
-            total={sorted.length}
-            onPageChange={setPage}
-            onPerPageChange={(n) => {
-              setPerPage(n);
-              setPage(1);
-            }}
-          />
+          <div className="flex justify-center p-6 border-t border-gray-50 dark:border-gray-800">
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={setPage}
+            />
+          </div>
         </div>
       </main>
     </div>

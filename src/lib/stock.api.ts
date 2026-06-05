@@ -23,6 +23,8 @@ export type StockHistoryItem = {
     id: string;
     code_lot: string;
   } | null;
+  created_at?: string;
+  updated_at?: string;
 };
 
 type StockHistoryResponse = {
@@ -75,6 +77,8 @@ export async function listStockHistory(params: ListStockHistoryParams = {}) {
           id
           code_lot
         }
+        created_at
+        updated_at
       }
     }
   `;

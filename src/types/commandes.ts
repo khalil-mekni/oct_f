@@ -61,6 +61,9 @@ export type EmballageOption = {
 export type EntrepotOption = {
   id: string | number;
   label: string;
+  capacite_totale?: number | null;
+  stock_existant?: number | null;
+  capacite_disponible?: number | null;
 };
 
 export type FournisseurOption = {

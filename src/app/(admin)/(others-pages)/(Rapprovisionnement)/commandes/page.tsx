@@ -55,6 +55,9 @@ export default async function CommandesPage({ searchParams }: PageProps) {
   const entrepots: EntrepotOption[] = entrepotsResult.map((item) => ({
     id: item.id,
     label: item.nom,
+    capacite_totale: item.capacite_totale,
+    stock_existant: item.stock_existant,
+    capacite_disponible: item.capacite_disponible,
   }));
 
   const fournisseurs: FournisseurOption[] =

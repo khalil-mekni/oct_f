@@ -72,8 +72,17 @@ async function handleSubmit(e: React.FormEvent) {
     };
 
     // 2. Validation locale simple avant l'envoi
-    if (!input.raison_sociale || !input.matricule_fiscale) {
-      alert("La raison sociale et le matricule fiscal sont obligatoires.");
+    if (
+      !input.raison_sociale ||
+      !input.matricule_fiscale ||
+      !input.registre_entreprise ||
+      !input.telephone ||
+      !input.email ||
+      !input.adresse ||
+      !input.representant_nom ||
+      !input.representant_role
+    ) {
+      alert("Veuillez remplir tous les champs obligatoires.");
       setLoading(false);
       return;
     }

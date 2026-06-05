@@ -80,9 +80,7 @@ export default function MouvementsPage() {
   const [error, setError] = useState("");
 
   const [page, setPage] = useState(1);
-  const [first] = useState(15);
-  const [lastPage, setLastPage] = useState(1);
-  const [total, setTotal] = useState(0);
+  const [perPage] = useState(10);
 
   // Filters
   const [search, setSearch] = useState("");
@@ -94,35 +92,29 @@ export default function MouvementsPage() {
   // Sort: most recent first by default
   const [sortAsc, setSortAsc] = useState(false);
 
+  // Reset page to 1 when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [search, dateFrom, dateTo, entrepotFilter, statutFilter]);
+
   // ─── Data loading ────────────────────────────────────────────────────────────
 
-  async function loadAll(targetPage = page) {
+  async function loadAll() {
     try {
       setLoading(true);
       setError("");
 
       const [mouvs, deps, embs] = await Promise.all([
-        fetchMouvements(targetPage, first),
+        fetchMouvements(1, 1000), // Fetch 1000 items for better client-side filtering
         fetchEntrepots(),
         listEmballages(1, 100),
       ]);
 
-      // Sort: most recent first
-      const data = Array.isArray(mouvs?.data) ? mouvs.data : [];
-      data.sort((a: MouvementStockRow, b: MouvementStockRow) => {
-        const ta = new Date(a.date_mouvement ?? 0).getTime();
-        const tb = new Date(b.date_mouvement ?? 0).getTime();
-         return tb - ta; // plus récent → plus ancien
-      });
-
-      setItems(data);
+      setItems(Array.isArray(mouvs?.data) ? mouvs.data : []);
       setEntrepots(Array.isArray(deps) ? deps : []);
       setEmballages(
         Array.isArray(embs?.emballages?.data) ? embs.emballages.data : []
       );
-      setPage(mouvs?.paginatorInfo?.currentPage ?? 1);
-      setLastPage(mouvs?.paginatorInfo?.lastPage ?? 1);
-      setTotal(mouvs?.paginatorInfo?.total ?? 0);
     } catch (e: any) {
       setError(e?.message ?? "Erreur lors du chargement.");
       setItems([]);
@@ -132,9 +124,9 @@ export default function MouvementsPage() {
   }
 
   useEffect(() => {
-    loadAll(page);
+    loadAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, sortAsc]);
+  }, []);
 
   // ─── Actions ─────────────────────────────────────────────────────────────────
 
@@ -145,7 +137,7 @@ export default function MouvementsPage() {
       await createMouvementDraft(input);
       setOpenForm(false);
       setPage(1);
-      await loadAll(1);
+      await loadAll();
     } catch (e: any) {
       setError(e?.message ?? "Erreur lors de la création du brouillon.");
     } finally {
@@ -160,7 +152,7 @@ export default function MouvementsPage() {
       setError("");
       setValidatingId(id);
       await validateMouvement(id);
-      await loadAll(page);
+      await loadAll();
     } catch (e: any) {
       setError(e?.message ?? "Erreur lors de la validation.");
     } finally {
@@ -175,7 +167,7 @@ export default function MouvementsPage() {
       setError("");
       setDeletingId(id);
       await deleteMouvementDraft(id);
-      await loadAll(page);
+      await loadAll();
     } catch (e: any) {
       setError(e?.message ?? "Erreur lors de la suppression.");
     } finally {
@@ -245,21 +237,25 @@ export default function MouvementsPage() {
     result.sort((a, b) => {
       const ta = new Date(a.date_mouvement ?? 0).getTime();
       const tb = new Date(b.date_mouvement ?? 0).getTime();
-      return tb - ta;
+      let cmp = tb - ta;
+      if (cmp === 0) {
+        const ca = new Date(a.created_at ?? 0).getTime();
+        const cb = new Date(b.created_at ?? 0).getTime();
+        cmp = cb - ca;
+      }
+      return sortAsc ? -cmp : cmp;
     });
 
     return result;
   }, [items, search, statutFilter, entrepotFilter, dateFrom, dateTo, sortAsc]);
 
-  // ─── Stats ────────────────────────────────────────────────────────────────────
-
-  const stats = useMemo(() => {
-    const brouillons = items.filter((i) => i.statut === "BROUILLON").length;
-    const valides = items.filter((i) => i.statut === "VALIDE").length;
-    return { brouillons, valides };
-  }, [items]);
-
   // ─── Pagination ───────────────────────────────────────────────────────────────
+
+  const lastPage = Math.max(1, Math.ceil(filteredItems.length / perPage));
+  const paginatedItems = useMemo(() => {
+    const start = (page - 1) * perPage;
+    return filteredItems.slice(start, start + perPage);
+  }, [filteredItems, page, perPage]);
 
   const pageNumbers = useMemo(() => {
     if (lastPage <= 7) return Array.from({ length: lastPage }, (_, i) => i + 1);
@@ -276,6 +272,14 @@ export default function MouvementsPage() {
     pages.push(lastPage);
     return pages;
   }, [page, lastPage]);
+
+  // ─── Stats ────────────────────────────────────────────────────────────────────
+
+  const stats = useMemo(() => {
+    const brouillons = items.filter((i) => i.statut === "BROUILLON").length;
+    const valides = items.filter((i) => i.statut === "VALIDE").length;
+    return { brouillons, valides };
+  }, [items]);
 
   // ─── Render ───────────────────────────────────────────────────────────────────
 
@@ -311,7 +315,7 @@ export default function MouvementsPage() {
           {[
             {
               label: "Total mouvements",
-              value: total,
+              value: items.length,
               icon: <History size={18} className="text-[#00A09D]" />,
               bg: "bg-white dark:bg-gray-900",
             },
@@ -444,7 +448,7 @@ export default function MouvementsPage() {
                     </td>
                   </tr>
                 ) : (
-                  filteredItems.map((item) => {
+                  paginatedItems.map((item) => {
                     const isValidating = validatingId === item.id;
                     const isDeleting = deletingId === item.id;
                     const busy = isValidating || isDeleting;
@@ -620,10 +624,10 @@ export default function MouvementsPage() {
           </div>
 
           {/* ── Pagination ── */}
-          {!loading && lastPage > 1 && (
+          {!loading && filteredItems.length > 10 && (
             <div className="flex items-center justify-between border-t border-gray-50 px-6 py-4 dark:border-gray-800">
               <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                Page {page} / {lastPage} — {total} mouvement(s)
+                Page {page} / {lastPage} — {filteredItems.length} mouvement(s)
               </span>
 
               <div className="flex items-center gap-1">

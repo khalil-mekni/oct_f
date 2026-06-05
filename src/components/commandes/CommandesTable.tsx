@@ -246,6 +246,24 @@ export default function CommandesTable({
     ) || null;
   }, [form.fournisseur_id, form.emballage_id, contrats]);
 
+  const selectedEntrepot = useMemo(() => {
+    if (!form.entrepot_id) return null;
+    return entrepots.find(e => String(e.id) === String(form.entrepot_id)) || null;
+  }, [form.entrepot_id, entrepots]);
+
+  const warehouseStats = useMemo(() => {
+    if (!selectedEntrepot) return null;
+    const total = Number(selectedEntrepot.capacite_totale || 0);
+    const existant = Number(selectedEntrepot.stock_existant || 0);
+    const saisie = Number(form.quantite || 0);
+    const disponible = total - existant;
+    const pourcentage = total > 0 ? Math.min(((existant + saisie) / total) * 100, 100) : 0;
+    const depasse = total > 0 && (existant + saisie) > total;
+    const surplus = (existant + saisie) - total;
+
+    return { total, existant, disponible, pourcentage, depasse, surplus };
+  }, [selectedEntrepot, form.quantite]);
+
   const contractStats = useMemo(() => {
     if (!activeContract) return null;
     const total = Number(activeContract.quantite_contractuelle || 0);
@@ -296,6 +314,19 @@ export default function CommandesTable({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    // Validation des champs obligatoires
+    if (
+      !form.emballage_id ||
+      !form.fournisseur_id ||
+      !form.entrepot_id ||
+      !form.date_livraison_prevue ||
+      !form.quantite
+    ) {
+      setErrorMessage("Veuillez remplir tous les champs obligatoires.");
+      return;
+    }
+
     if (contractStats?.depasse) { setErrorMessage("Quantité supérieure au reste du contrat !"); return; }
     
     const qty = Number(form.quantite);
@@ -636,6 +667,19 @@ export default function CommandesTable({
             </tbody>
           </table>
         </div>
+
+        {/* PAGINATION SECTION */}
+        <div className="border-t border-gray-50 p-6 flex justify-center">
+          <Pagination
+            currentPage={pagination.currentPage}
+            totalPages={pagination.lastPage}
+            onPageChange={(page) => {
+              const params = new URLSearchParams(searchParams.toString());
+              params.set("page", page.toString());
+              router.push(`${pathname}?${params.toString()}`);
+            }}
+          />
+        </div>
       </div>
 
       {/* DRAWER SECTION */}
@@ -744,6 +788,41 @@ export default function CommandesTable({
                     {entrepots.map(en => <option key={en.id} value={String(en.id)}>{en.label}</option>)}
                   </select>
                 </div>
+
+                {selectedEntrepot && warehouseStats && (
+                  <div className={`rounded-[2.5rem] border-2 p-8 space-y-4 shadow-inner transition-all duration-500 ${warehouseStats.depasse ? "border-amber-100 bg-amber-50/50" : "border-indigo-50 bg-indigo-50/30"}`}>
+                    <div className="flex justify-between items-end">
+                      <span className={`text-[10px] font-black uppercase tracking-widest ${warehouseStats.depasse ? "text-amber-600" : "text-indigo-600"}`}>
+                        Capacité Entrepôt
+                      </span>
+                      <span className={`text-2xl font-black ${warehouseStats.depasse ? "text-amber-600" : "text-indigo-900"}`}>
+                        {warehouseStats.pourcentage.toFixed(0)}%
+                      </span>
+                    </div>
+
+                    <div className="h-3 w-full overflow-hidden rounded-full bg-white border border-indigo-100/50">
+                      <div
+                        className={`h-full transition-all duration-1000 ${warehouseStats.depasse ? "bg-amber-500" : "bg-emerald-500"}`}
+                        style={{ width: `${warehouseStats.pourcentage}%` }}
+                      />
+                    </div>
+
+                    {warehouseStats.depasse ? (
+                      <div className="flex items-start gap-3 mt-4 animate-in fade-in slide-in-from-top-2">
+                        <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                        <p className="text-[11px] font-bold text-amber-700 leading-relaxed uppercase tracking-tight">
+                          Attention : La commande dépasse la capacité de l'entrepôt de <span className="underline">{warehouseStats.surplus}</span> unités.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="flex justify-between text-[9px] font-black text-gray-400 uppercase">
+                        <span>Disponible: {warehouseStats.disponible}</span>
+                        <span>Stock actuel: {warehouseStats.existant}</span>
+                        <span>Total: {warehouseStats.total}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </form>
 
               <div className="border-t border-gray-50 p-10 flex gap-4 bg-white/80 backdrop-blur-md">

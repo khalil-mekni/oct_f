@@ -227,6 +227,7 @@ export default function ContratTable({ data }: { data?: TableContrat[] }) {
     data ? data.map(normalizeContrat) : []
   );
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [editing, setEditing] = useState<TableContrat | null>(null);
   const [query, setQuery] = useState("");
@@ -384,6 +385,7 @@ export default function ContratTable({ data }: { data?: TableContrat[] }) {
     };
 
     setEditing(null);
+    setErrorMessage("");
 
     setForm((prev) => {
       const updated: ContratFormState = { ...prev };
@@ -470,61 +472,44 @@ export default function ContratTable({ data }: { data?: TableContrat[] }) {
     e?: React.FormEvent | React.MouseEvent<HTMLButtonElement>
   ) => {
     e?.preventDefault();
+    setErrorMessage("");
+
+    const numeroContrat = form.numero_contrat.trim();
+
+    if (
+      !numeroContrat ||
+      !form.fournisseur_id ||
+      !form.emballage_id ||
+      !form.objet?.trim() ||
+      !form.date_signature ||
+      !form.date_debut ||
+      !form.date_fin ||
+      form.quantite_contractuelle === "" ||
+      form.prix_unitaire === "" ||
+      form.taux_depassement_autorise === "" ||
+      form.taux_cautionnement === "" ||
+      form.taux_penalite_retard === "" ||
+      form.plafond_penalite === ""
+    ) {
+      setErrorMessage("Veuillez remplir tous les champs obligatoires.");
+      return;
+    }
+
+    const qteContractuelle = toNumberOrDefault(form.quantite_contractuelle, 0);
+    if (qteContractuelle <= 0) {
+      setErrorMessage("La quantité contractuelle doit être supérieure à 0.");
+      return;
+    }
+
+    const prixUnitaire = toNumberOrNull(form.prix_unitaire);
+    if (prixUnitaire !== null && prixUnitaire <= 0) {
+      setErrorMessage("Le prix unitaire doit être supérieur à 0.");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const numeroContrat = form.numero_contrat.trim();
-
-      if (!numeroContrat) {
-        alert("Le numéro de contrat est obligatoire.");
-        return;
-      }
-
-      if (!form.fournisseur_id) {
-        alert("Le fournisseur est obligatoire.");
-        return;
-      }
-
-      if (!form.emballage_id) {
-        alert("Le type d'emballage est obligatoire.");
-        setLoading(false);
-        return;
-      }
-
-      const qteContractuelle = toNumberOrDefault(form.quantite_contractuelle, 0);
-      if (qteContractuelle <= 0) {
-        alert("La quantité contractuelle doit être supérieure à 0.");
-        setLoading(false);
-        return;
-      }
-
-      const montantHt = toNumberOrNull(form.montant_ht);
-      if (montantHt !== null && montantHt <= 0) {
-        alert("Le montant HT doit être supérieur à 0.");
-        setLoading(false);
-        return;
-      }
-
-      const montantTva = toNumberOrDefault(form.montant_tva, 0);
-      if (montantTva < 0) {
-        alert("Le montant TVA ne peut pas être négatif.");
-        setLoading(false);
-        return;
-      }
-      // Si l'utilisateur a saisi 0 pour la TVA mais que c'est requis par le métier :
-      if (form.montant_tva !== "" && Number(form.montant_tva) === 0) {
-        alert("Le montant TVA doit être supérieur à 0.");
-        setLoading(false);
-        return;
-      }
-
-      const prixUnitaire = toNumberOrNull(form.prix_unitaire);
-      if (prixUnitaire !== null && prixUnitaire <= 0) {
-        alert("Le prix unitaire doit être supérieur à 0.");
-        setLoading(false);
-        return;
-      }
-
       const payload = {
         numero_contrat: numeroContrat,
         objet: form.objet.trim() || null,
@@ -581,9 +566,9 @@ export default function ContratTable({ data }: { data?: TableContrat[] }) {
       setEditing(null);
       setForm(emptyForm);
       setOcrRawText("");
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Erreur de sauvegarde : vérifiez les champs obligatoires.");
+      setErrorMessage(err?.message || "Erreur de sauvegarde : vérifiez les champs obligatoires.");
     } finally {
       setLoading(false);
     }
@@ -653,6 +638,7 @@ export default function ContratTable({ data }: { data?: TableContrat[] }) {
         fournisseurs={fournisseurs}
         emballages={emballages}
         ocrRawText={ocrRawText}
+        errorMessage={errorMessage}
       />
     </div>
   );

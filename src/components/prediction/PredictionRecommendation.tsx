@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Key, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PredictionPoint, RecommandationAction } from "@/lib/predictionEmballageService";
 import {
@@ -122,7 +122,7 @@ export default function PredictionRecommendation({
                 <h2 className="text-2xl font-black tracking-tight text-slate-900">Plan d'Approvisionnement par Mois</h2>
                 <div className="flex items-center gap-2">
                   <span className="flex h-2 w-2 rounded-full bg-teal-500 animate-ping" />
-                  <p className="text-xs font-bold uppercase tracking-widest text-teal-600">Recommandations optimisées (2-3 max / mois)</p>
+                  <p className="text-xs font-bold uppercase tracking-widest text-teal-600">Recommandations optimisées </p>
                 </div>
               </div>
             </div>
@@ -212,7 +212,7 @@ export default function PredictionRecommendation({
 
                         {isOpen && (
                           <div className="space-y-3 border-t border-slate-50 bg-slate-50/30 p-5 animate-in slide-in-from-top-2 duration-300">
-                            {month.recommandations_plan.map((rec, idx) => (
+                            {month.recommandations_plan.map((rec: any, idx: number) => (
                               <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-white bg-white/80 p-4 shadow-sm">
                                 <div className="flex items-center gap-4">
                                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-50 text-teal-600">
@@ -235,7 +235,7 @@ export default function PredictionRecommendation({
                                   onClick={() => handleOrderNow(rec)}
                                   className="flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-2 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-teal-600 active:scale-95"
                                 >
-                                  Préparer
+                                  Passer
                                   <ArrowRight size={14} />
                                 </button>
                               </div>

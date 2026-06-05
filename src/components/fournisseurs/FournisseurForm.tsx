@@ -85,16 +85,25 @@ React.useEffect(() => {
     if (step === 1) {
       if (!form.raison_sociale?.trim()) newErrors.raison_sociale = "La raison sociale est obligatoire";
       if (!form.matricule_fiscale?.trim()) newErrors.matricule_fiscale = "Le matricule fiscal est requis";
+      if (!form.registre_entreprise?.trim()) newErrors.registre_entreprise = "Le registre d'entreprise est requis";
     }
     if (step === 2) {
-      if (form.email) {
+      if (!form.email?.trim()) {
+        newErrors.email = "L'email est obligatoire";
+      } else {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(form.email)) newErrors.email = "Email invalide (ex: contact@oct.tn)";
       }
-      if (form.telephone) {
+
+      if (!form.telephone?.trim()) {
+        newErrors.telephone = "Le téléphone est obligatoire";
+      } else {
         const phoneRegex = /^[0-9+ ]{8,}$/;
         if (!phoneRegex.test(form.telephone)) newErrors.telephone = "Numéro invalide";
       }
+
+      if (!form.representant_nom?.trim()) newErrors.representant_nom = "Le nom du représentant est requis";
+      if (!form.representant_role?.trim()) newErrors.representant_role = "Le rôle du représentant est requis";
     }
     if (step === 3) {
       if (!form.adresse?.trim()) newErrors.adresse = "L'adresse est requise";
