@@ -3,6 +3,7 @@
 import { Fragment, useEffect, useState } from "react";
 import {
   Pencil,
+  Trash2,
   ChevronDown,
   ChevronRight,
   MapPin,
@@ -16,6 +17,7 @@ import type { Entrepot } from "@/lib/entrepot.api";
 type Props = {
   rows: Entrepot[];
   onEdit?: (item: Entrepot) => void;
+  onDelete?: (item: Entrepot) => void;
   highlightedId?: string | number | null;
 };
 
@@ -90,7 +92,7 @@ function OccupationBar({ rate }: { rate: number }) {
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 
-export function EntrepotsListView({ rows, onEdit, highlightedId }: Props) {
+export function EntrepotsListView({ rows, onEdit, onDelete, highlightedId }: Props) {
   const [expandedRows, setExpandedRows] = useState<string[]>([]);
 
   const toggle = (id: string) =>
@@ -134,7 +136,7 @@ export function EntrepotsListView({ rows, onEdit, highlightedId }: Props) {
             <th className="px-5 py-4">Taux</th>
             <th className="px-5 py-4 text-center">Lots</th>
             <th className="px-5 py-4 text-center">Statut</th>
-            {onEdit && <th className="px-5 py-4 text-right">Action</th>}
+            {(onEdit || onDelete) && <th className="px-5 py-4 text-right">Action</th>}
           </tr>
         </thead>
 
@@ -273,20 +275,34 @@ export function EntrepotsListView({ rows, onEdit, highlightedId }: Props) {
                   </td>
 
                   {/* Action */}
-                  {onEdit && (
+                  {(onEdit || onDelete) && (
                     <td
                       className={`border-b border-gray-50 px-5 py-4 text-right dark:border-gray-800 ${
                         isExpanded ? "border-b-0" : ""
                       }`}
                     >
-                      <button
-                        type="button"
-                        onClick={() => onEdit?.(item)}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-gray-100 bg-white px-3.5 py-2 text-[10px] font-black uppercase tracking-widest text-gray-500 shadow-sm transition-all hover:border-[#00A09D]/20 hover:bg-[#00A09D]/5 hover:text-[#00A09D] dark:border-gray-700 dark:bg-gray-800"
-                      >
-                        <Pencil size={12} />
-                        Modifier
-                      </button>
+                      <div className="flex justify-end gap-2">
+                        {onEdit && (
+                          <button
+                            type="button"
+                            onClick={() => onEdit?.(item)}
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-gray-100 bg-white px-3.5 py-2 text-[10px] font-black uppercase tracking-widest text-gray-500 shadow-sm transition-all hover:border-[#00A09D]/20 hover:bg-[#00A09D]/5 hover:text-[#00A09D] dark:border-gray-700 dark:bg-gray-800"
+                          >
+                            <Pencil size={12} />
+                            Modifier
+                          </button>
+                        )}
+                        {onDelete && (
+                          <button
+                            type="button"
+                            onClick={() => onDelete?.(item)}
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-red-100 bg-white px-3.5 py-2 text-[10px] font-black uppercase tracking-widest text-red-500 shadow-sm transition-all hover:border-red-200 hover:bg-red-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-red-900/10"
+                          >
+                            <Trash2 size={12} />
+                            Supprimer
+                          </button>
+                        )}
+                      </div>
                     </td>
                   )}
                 </tr>
@@ -295,7 +311,7 @@ export function EntrepotsListView({ rows, onEdit, highlightedId }: Props) {
                 {isExpanded && (
                   <tr key={`${item.id}-lots`}>
                     <td
-                      colSpan={onEdit ? 9 : 8}
+                      colSpan={(onEdit || onDelete) ? 9 : 8}
                       className="border-b border-gray-50 bg-gray-50/40 px-5 pb-5 pt-0 dark:border-gray-800 dark:bg-gray-800/20"
                     >
                       {/* Lot sub-table */}

@@ -7,6 +7,7 @@ import {
   fetchEntrepots,
   createEntrepot,
   updateEntrepot,
+  deleteEntrepot,
   type Entrepot,
 } from "@/lib/entrepot.api";
 import dynamic from "next/dynamic";
@@ -89,6 +90,27 @@ export default function EntrepotsPage() {
   const handleOpenEdit = (item: Entrepot) => {
     setEditingItem(item);
     setIsModalOpen(true);
+  };
+
+  const handleDelete = async (item: Entrepot) => {
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer l'entrepôt "${item.nom}" ?`)) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const success = await deleteEntrepot(item.id);
+      if (success) {
+        await loadData();
+      } else {
+        alert("Impossible de supprimer cet entrepôt.");
+      }
+    } catch (err) {
+      console.error("Erreur suppression:", err);
+      alert("Une erreur est survenue lors de la suppression.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSave = async (formData: Partial<Entrepot>) => {
@@ -394,6 +416,7 @@ export default function EntrepotsPage() {
                   <EntrepotsListView
                     rows={paginatedItems}
                     onEdit={isAdmin ? handleOpenEdit : undefined}
+                    onDelete={isAdmin ? handleDelete : undefined}
                     highlightedId={highlightedId}
                   />
                 )}
