@@ -32,6 +32,8 @@ type ContratFormState = {
   taux_depassement_autorise: NumericInput;
   montant_ht: NumericInput;
   montant_tva: NumericInput;
+  montant_ttc: NumericInput;
+  tva_rate: NumericInput;
   taux_cautionnement: NumericInput;
   taux_penalite_retard: NumericInput;
   plafond_penalite: NumericInput;
@@ -125,6 +127,8 @@ function mapContratToForm(c: TableContrat): ContratFormState {
     taux_depassement_autorise: c.taux_depassement_autorise ?? 0.2,
     montant_ht: c.montant_ht ?? 0,
     montant_tva: c.montant_tva ?? 0,
+    montant_ttc: (c.montant_ht ?? 0) + (c.montant_tva ?? 0),
+    tva_rate: (c.montant_ht && c.montant_ht > 0) ? (c.montant_tva ?? 0) / c.montant_ht : 0.19,
     taux_cautionnement: c.taux_cautionnement ?? 3,
     taux_penalite_retard: c.taux_penalite_retard ?? 0.002,
     plafond_penalite: c.plafond_penalite ?? 5,
@@ -142,7 +146,7 @@ function extractFromRawText(rawText: string): Partial<OcrContratMappedData> {
   const result: Partial<OcrContratMappedData> = {};
 
   const contratMatch = text.match(
-    /(?:contrat\s*n[°o]?\s*|num[eé]ro contrat\s*:?\s*|r[eé]f[eé]rence\s*:?\s*)([A-Z0-9/_-]+)/i
+    /(?:contrat\s*n[°o]?\s*|num[eéÉ]ro contrat\s*:?\s*|r[eéÉ]f[eéÉ]rence\s*:?\s*)([A-Z0-9/_-]+)/i
   );
   if (contratMatch?.[1]) {
     result.numero_contrat = contratMatch[1].trim();
@@ -154,7 +158,7 @@ function extractFromRawText(rawText: string): Partial<OcrContratMappedData> {
   }
 
   const dateDebutMatch = text.match(
-    /date\s+de\s+d[eé]but\s*:?\s*(\d{2}\/\d{2}\/\d{4})/i
+    /date\s+de\s+d[eéÉ]but\s*:?\s*(\d{2}\/\d{2}\/\d{4})/i
   );
   if (dateDebutMatch?.[1]) {
     result.date_debut = dateDebutMatch[1];
@@ -168,19 +172,21 @@ function extractFromRawText(rawText: string): Partial<OcrContratMappedData> {
   }
 
   const qteMatch = text.match(
-    /(?:quantit[eé]\s+totale|quantit[eé]\s+contractuelle|quantit[eé])\s*:?\s*([0-9]+(?:[.,][0-9]+)?)/i
+    /(?:quantit[eéÉ]\s+totale|quantit[eéÉ]\s+contractuelle|quantit[eéÉ]|qt[eéÉ]\s+contractuelle|qt[eéÉ])\s*:?\s*([0-9\s]+(?:[.,][0-9]+)?)/i
   );
   if (qteMatch?.[1]) {
     result.quantite_contractuelle = Number(
-      qteMatch[1].replace(",", ".").trim()
+      qteMatch[1].replace(/\s/g, "").replace(",", ".").trim()
     );
   }
 
   const puMatch = text.match(
-    /prix\s+unitaire\s*:?\s*([0-9]+(?:[.,][0-9]+)?)/i
+    /prix\s+unitaire\s*:?\s*([0-9\s]+(?:[.,][0-9]+)?)/i
   );
   if (puMatch?.[1]) {
-    result.prix_unitaire = Number(puMatch[1].replace(",", ".").trim());
+    result.prix_unitaire = Number(
+      puMatch[1].replace(/\s/g, "").replace(",", ".").trim()
+    );
   }
 
   const montantHtMatch = text.match(
@@ -251,6 +257,8 @@ export default function ContratTable({ data }: { data?: TableContrat[] }) {
     taux_depassement_autorise: 0.2,
     montant_ht: 0,
     montant_tva: 0,
+    montant_ttc: 0,
+    tva_rate: 0.19,
     taux_cautionnement: 3,
     taux_penalite_retard: 0.002,
     plafond_penalite: 5,
@@ -460,6 +468,31 @@ export default function ContratTable({ data }: { data?: TableContrat[] }) {
         if (emballageId) {
           updated.emballage_id = emballageId;
         }
+      }
+
+      // Calcul automatique du montant HT si Qte et Prix Unitaire sont présents et HT est à 0
+      if (
+        updated.quantite_contractuelle > 0 &&
+        updated.prix_unitaire > 0 &&
+        (!updated.montant_ht || updated.montant_ht === 0)
+      ) {
+        updated.montant_ht =
+          updated.quantite_contractuelle * updated.prix_unitaire;
+      }
+
+      const tvaRate = updated.tva_rate ?? 0.19;
+
+      // Calcul automatique de la TVA si HT est présent et TVA est à 0
+      if (
+        updated.montant_ht > 0 &&
+        (!updated.montant_tva || updated.montant_tva === 0)
+      ) {
+        updated.montant_tva = updated.montant_ht * tvaRate;
+      }
+
+      // Calcul automatique du TTC
+      if (updated.montant_ht > 0) {
+        updated.montant_ttc = updated.montant_ht + (updated.montant_tva || 0);
       }
 
       return updated;
