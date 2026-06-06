@@ -360,7 +360,7 @@ export default function ContractFinancialDashboard() {
           >
             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Engagement par Type</h3>
             <p className="text-xs text-slate-500 mb-6">Répartition financière par catégorie d&apos;emballage</p>
-            <div className="h-[240px] w-full">
+            <div className="h-[240px] w-full relative">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -386,13 +386,13 @@ export default function ContractFinancialDashboard() {
                       boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1)"
                     }}
                     itemStyle={{ color: "#fff", fontSize: "12px", fontWeight: "bold" }}
-                    formatter={(val: number) => formatDT(val)}
+                    formatter={(val: any) => formatDT(Number(val) || 0)}
                   />
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total</p>
-                 <p className="text-xl font-black text-slate-900 dark:text-white">{formatDT(stats?.totalAmount || 0).split(',')[0]} DT</p>
+                 <p className="text-xl font-black text-slate-900 dark:text-white">{formatDT(stats?.totalAmount || 0)}</p>
               </div>
             </div>
             <div className="mt-6 space-y-2">

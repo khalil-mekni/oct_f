@@ -852,7 +852,7 @@ export default function PredictionEmballagePage() {
               )}
 
               {/* Recommendation */}
-              {data.length > 0 && showRecommendations && (
+              {data.length > 0 && showRecommendations && params.granularity === "month" && (
                 <div ref={recommendationRef}>
                   <PredictionRecommendation 
                     data={data} 

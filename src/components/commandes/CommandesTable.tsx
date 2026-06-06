@@ -198,13 +198,20 @@ export default function CommandesTable({
   useEffect(() => {
     const embId = searchParams.get("emballage_id");
     const qte = searchParams.get("quantite");
+    const dateLivraison = searchParams.get("date_livraison");
 
     if (embId && qte) {
+      // Si une date est fournie dans l'URL (via recommandation), on l'utilise.
+      // Sinon, on met par défaut J+10 comme demandé par l'utilisateur.
+      const defaultDate = new Date();
+      defaultDate.setDate(defaultDate.getDate() + 10);
+      const formattedDefault = defaultDate.toISOString().split("T")[0];
+
       setForm((prev) => ({
         ...prev,
         emballage_id: String(embId),
         quantite: String(qte),
-        date_livraison_prevue: new Date().toISOString().split("T")[0],
+        date_livraison_prevue: dateLivraison || formattedDefault,
       }));
       setIsDrawerOpen(true);
 
@@ -212,6 +219,7 @@ export default function CommandesTable({
       const newParams = new URLSearchParams(searchParams.toString());
       newParams.delete("emballage_id");
       newParams.delete("quantite");
+      newParams.delete("date_livraison");
       newParams.delete("prix_unitaire");
       newParams.delete("cout_estime");
       const qs = newParams.toString();

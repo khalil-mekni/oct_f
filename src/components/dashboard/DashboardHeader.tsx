@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BellRing, Building2, ArrowRightLeft, LayoutDashboard, TrendingUp, Package, FileText, Truck } from "lucide-react";
+import { BellRing, Building2, ArrowRightLeft, LayoutDashboard, Package, FileText, Truck } from "lucide-react";
 
 function AccentKpi({
   label, value, unit, bgColor, iconColor, borderColor, barColor, barWidth, icon: Icon,
@@ -105,14 +105,7 @@ export default function DashboardHeader() {
       </div>
 
       {/* KPI strip */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <AccentKpi
-          label="Taux de complétion"
-          value="87" unit="%"
-          bgColor="#e4fbff" iconColor="#0bbcd9" borderColor="#a8f0fc"
-          barColor="#21DAFF" barWidth="87%"
-          icon={TrendingUp}
-        />
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <AccentKpi
           label="Stock en transit"
           value="124" unit="unités"

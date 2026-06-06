@@ -202,7 +202,7 @@ const AppSidebar: React.FC = () => {
     navItems: NavItem[],
     menuType: "main" | "others"
   ) => (
-    <ul className="flex flex-col gap-4">
+    <ul className="flex flex-col gap-6">
       {navItems.map((nav, index) => (
         <li key={nav.name}>
           {nav.path && (
@@ -248,7 +248,7 @@ const AppSidebar: React.FC = () => {
       onMouseLeave={() => setIsHovered(false)}
     >
       <div
-        className={`py-10 flex items-center transition-all duration-300 ${
+        className={`py-14 flex items-center transition-all duration-300 ${
           !isExpanded && !isHovered ? "justify-center" : "justify-start px-6"
         }`}
       >
@@ -285,11 +285,11 @@ const AppSidebar: React.FC = () => {
       </div>
 
       <div className="flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar">
-        <nav className="mb-6">
+        <nav className="mb-10">
           <div className="flex flex-col gap-4">
             <div>
               <h2
-                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${
+                className={`mb-6 text-xs uppercase flex leading-[20px] text-gray-400 ${
                   !isExpanded && !isHovered
                     ? "lg:justify-center"
                     : "justify-start"

@@ -2,6 +2,7 @@
 
 export type RecommandationAction = {
   date_suggeree: string;
+  date_livraison?: string;
   quantite: number;
   description: string;
 };
@@ -69,6 +70,7 @@ export async function getPredictionEmballage(
         receptions_futures_mois
         recommandations_plan {
           date_suggeree
+          date_livraison
           quantite
           description
         }

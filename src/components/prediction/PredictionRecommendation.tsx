@@ -69,7 +69,7 @@ export default function PredictionRecommendation({
     const params = new URLSearchParams({
       emballage_id: String(emballageId),
       quantite: String(rec.quantite),
-      date_livraison: rec.date_suggeree,
+      date_livraison: rec.date_livraison || rec.date_suggeree,
     });
     router.push(`/commandes?${params.toString()}`);
   };
@@ -88,11 +88,13 @@ export default function PredictionRecommendation({
         recommandations_plan: [],
       };
     }
-    // Éviter les recommandations identiques (même date et quantité)
+    // Éviter les recommandations identiques (même date, livraison et quantité)
     point.recommandations_plan.forEach((rec) => {
       const isDuplicate = acc[monthKey].recommandations_plan.some(
         (r: any) =>
-          r.date_suggeree === rec.date_suggeree && r.quantite === rec.quantite
+          r.date_suggeree === rec.date_suggeree && 
+          r.date_livraison === rec.date_livraison &&
+          r.quantite === rec.quantite
       );
       if (!isDuplicate) {
         acc[monthKey].recommandations_plan.push(rec);
@@ -221,21 +223,28 @@ export default function PredictionRecommendation({
                                   <div>
                                     <div className="flex items-center gap-2">
                                       <span className="text-[10px] font-black text-teal-600 uppercase">
-                                        {new Date(rec.date_suggeree).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}
+                                        Commander le : {new Date(rec.date_suggeree).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}
                                       </span>
-                                      <span className="h-1 w-1 rounded-full bg-slate-300" />
-                                      <span className="text-[10px] font-bold text-slate-400">{rec.description}</span>
+                                      {rec.date_livraison && (
+                                        <>
+                                          <span className="h-1 w-1 rounded-full bg-slate-300" />
+                                          <span className="text-[10px] font-black text-emerald-600 uppercase">
+                                            Livraison : {new Date(rec.date_livraison).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}
+                                          </span>
+                                        </>
+                                      )}
                                     </div>
                                     <p className="text-sm font-black text-slate-900">
-                                      Commander <span className="text-teal-600">{rec.quantite}</span> {month.unite}
+                                      Quantité : <span className="text-teal-600">{rec.quantite}</span> {month.unite}
                                     </p>
+                                    <p className="text-[10px] font-bold text-slate-400 mt-0.5">{rec.description}</p>
                                   </div>
                                 </div>
                                 <button 
                                   onClick={() => handleOrderNow(rec)}
                                   className="flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-2 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-teal-600 active:scale-95"
                                 >
-                                  Passer
+                                  Commander
                                   <ArrowRight size={14} />
                                 </button>
                               </div>
