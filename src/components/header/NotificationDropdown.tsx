@@ -124,7 +124,7 @@ export default function NotificationDropdown() {
   }, [alerts]);
 
   useEffect(() => {
-    const url = new URL("http://localhost:3001/.well-known/mercure");
+    const url = new URL("http://127.0.0.1:3001/.well-known/mercure");
     url.searchParams.append("topic", "alerts/general");
     const eventSource = new EventSource(url.toString());
 

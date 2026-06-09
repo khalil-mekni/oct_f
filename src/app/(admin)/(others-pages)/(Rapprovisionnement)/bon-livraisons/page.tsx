@@ -52,6 +52,7 @@ export default async function BonLivraisonsPage({
       id: item.id,
       numero_commande: item.numero_commande,
       quantite: item.quantite,
+      quantite_recue_total: item.quantite_recue_total,
       emballage_id: item.emballage_id,
       entrepot_id: item.entrepot_id,
       statut: item.statut,

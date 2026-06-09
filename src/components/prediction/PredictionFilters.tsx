@@ -89,7 +89,7 @@ const now = new Date();
 const currentYear = now.getFullYear();
 const currentMonth = now.getMonth() + 1;
 
-const YEARS = Array.from({ length: 8 }, (_, i) => currentYear + i);
+const YEARS = Array.from({ length: 3 }, (_, i) => currentYear + i);
 
 const getAvailableMonths = (year: number) => {
   return MONTHS.map((name, index) => ({

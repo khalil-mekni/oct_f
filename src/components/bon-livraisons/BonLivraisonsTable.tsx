@@ -82,7 +82,7 @@ type BonLivraisonForm = {
 };
 
 const emptyForm: BonLivraisonForm = {
-  date_reception: new Date().toISOString().split("T")[0],
+  date_reception: new Date().toLocaleDateString('en-CA'), // YYYY-MM-DD local
   emballage_id: "",
   quantite_recue: "",
   numero_commande: "",
@@ -159,10 +159,13 @@ export default function BonLivraisonsTable({
 
   const dejaRecu = useMemo(() => {
     if (!selectedCommande) return 0;
-    return rows
-      .filter((bl) => bl.numero_commande === selectedCommande.numero_commande && String(bl.id) !== String(editing?.id))
-      .reduce((acc, bl) => acc + (Number(bl.quantite_recue) || 0), 0);
-  }, [selectedCommande, rows, editing]);
+    const totalRecuTotal = Number(selectedCommande.quantite_recue_total || 0);
+    // Si on modifie un BL existant, la quantité déjà reçue (hors ce BL) est : total - celui en cours
+    if (editing) {
+      return Math.max(0, totalRecuTotal - (Number(editing.quantite_recue) || 0));
+    }
+    return totalRecuTotal;
+  }, [selectedCommande, editing]);
 
   const remainingQuantity = selectedCommande ? (selectedCommande.quantite - dejaRecu) : 0;
 
@@ -189,7 +192,7 @@ export default function BonLivraisonsTable({
     const totalRecu = rows.reduce((acc, curr) => acc + (Number(curr.quantite_recue) || 0), 0);
     const nbBl = rows.length;
     // On calcule le reliquat global basé sur les commandes en attente
-    const reliquatGlobal = commandesEnAttente.reduce((acc, curr) => acc + (curr.quantite - (curr.quantite || 0)), 0);
+    const reliquatGlobal = commandesEnAttente.reduce((acc, curr: any) => acc + (Number(curr.quantite) - (Number(curr.quantite_recue_total) || 0)), 0);
 
     return { totalRecu, nbBl, reliquatGlobal };
   }, [rows, commandesEnAttente]);
@@ -457,7 +460,24 @@ export default function BonLivraisonsTable({
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] ml-1">Quantité (Max: {remainingQuantity})</label>
-                    <input type="number" value={form.quantite_recue} onChange={(e) => setForm({ ...form, quantite_recue: e.target.value })} className="w-full rounded-2xl border-2 border-gray-100 p-4 text-xs font-black outline-none focus:border-indigo-600 transition-all placeholder:text-gray-200" placeholder="00" required />
+                    <input
+                      type="number"
+                      value={form.quantite_recue}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setForm({ ...form, quantite_recue: val });
+                        if (Number(val) > remainingQuantity) {
+                          setErrorMessage(`Attention: La quantité dépasse le reste à livrer (${remainingQuantity})`);
+                        } else {
+                          setErrorMessage("");
+                        }
+                      }}
+                      className={`w-full rounded-2xl border-2 p-4 text-xs font-black outline-none transition-all placeholder:text-gray-200 ${
+                        Number(form.quantite_recue) > remainingQuantity ? "border-red-500 bg-red-50/30 focus:border-red-600" : "border-gray-100 bg-gray-50 focus:border-indigo-600"
+                      }`}
+                      placeholder="00"
+                      required
+                    />
                   </div>
                 </div>
 

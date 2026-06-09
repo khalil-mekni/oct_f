@@ -858,6 +858,7 @@ export default function PredictionEmballagePage() {
                     data={data} 
                     granularity={params.granularity} 
                     emballageId={params.emballageId as number}
+                    entrepotId={params.entrepotId}
                   />
                 </div>
               )}

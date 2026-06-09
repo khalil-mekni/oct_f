@@ -199,6 +199,7 @@ export default function CommandesTable({
     const embId = searchParams.get("emballage_id");
     const qte = searchParams.get("quantite");
     const dateLivraison = searchParams.get("date_livraison");
+    const entrepotId = searchParams.get("entrepot_id");
 
     if (embId && qte) {
       // Si une date est fournie dans l'URL (via recommandation), on l'utilise.
@@ -212,6 +213,7 @@ export default function CommandesTable({
         emballage_id: String(embId),
         quantite: String(qte),
         date_livraison_prevue: dateLivraison || formattedDefault,
+        entrepot_id: entrepotId ? String(entrepotId) : prev.entrepot_id,
       }));
       setIsDrawerOpen(true);
 
@@ -222,6 +224,7 @@ export default function CommandesTable({
       newParams.delete("date_livraison");
       newParams.delete("prix_unitaire");
       newParams.delete("cout_estime");
+      newParams.delete("entrepot_id");
       const qs = newParams.toString();
       router.replace(qs ? `?${qs}` : pathname);
     }
@@ -475,18 +478,7 @@ export default function CommandesTable({
           </div>
         </div>
 
-        {/* Widget 2: Reste à recevoir (Somme des reliquats) */}
-        <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex items-center gap-4">
-          <div className="h-12 w-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
-            <ArrowRight className="h-6 w-6" />
-          </div>
-          <div>
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Reliquat Total</p>
-            <p className="text-xl font-black text-amber-600">
-              {rows.reduce((acc, curr) => acc + Math.max(0, Number(curr.reste || 0)), 0)}
-            </p>
-          </div>
-        </div>
+        
 
         {/* Widget 3: Alertes Retards */}
         <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex items-center gap-4">

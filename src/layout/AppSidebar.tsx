@@ -50,7 +50,7 @@ type NavItem = {
 const navItems: NavItem[] = [
   {
     icon: <BoxCubeIcon />,
-    name: "Entrepot Dashboard",
+    name: "Entrepot ",
     path: "/entrepots",
     roles: ["ADMIN", "RESPONSABLE_STOCKAGE"],
   },
@@ -70,7 +70,7 @@ const navItems: NavItem[] = [
     icon: <BrainCircuit />,
     name: "Prediction et recommandation",
     path: "/prediction-emballage",
-    roles: ["ADMIN", "RESPONSABLE_APPROVISIONNEMENT", "RESPONSABLE_STOCKAGE"],
+    roles: ["ADMIN", "RESPONSABLE_APPROVISIONNEMENT"],
   },
   {
     icon: <UserCircleIcon />,

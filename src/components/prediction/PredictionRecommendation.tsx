@@ -2,6 +2,7 @@
 
 import { Key, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 import { PredictionPoint, RecommandationAction } from "@/lib/predictionEmballageService";
 import {
   ShoppingCart,
@@ -26,15 +27,20 @@ interface PredictionRecommendationProps {
   data: PredictionPoint[];
   granularity: "day" | "month" | "year";
   emballageId: number;
+  entrepotId: number | null;
 }
 
 export default function PredictionRecommendation({
   data,
   granularity,
   emballageId,
+  entrepotId,
 }: PredictionRecommendationProps) {
   const [openMonths, setOpenMonths] = useState<string[]>([data[0]?.periode]);
   const router = useRouter();
+  const { user } = useAuth();
+
+  const canOrder = user?.role === "RESPONSABLE_APPROVISIONNEMENT";
 
   if (data.length === 0) return null;
 
@@ -70,6 +76,7 @@ export default function PredictionRecommendation({
       emballage_id: String(emballageId),
       quantite: String(rec.quantite),
       date_livraison: rec.date_livraison || rec.date_suggeree,
+      entrepot_id: entrepotId !== null ? String(entrepotId) : "",
     });
     router.push(`/commandes?${params.toString()}`);
   };
@@ -240,13 +247,15 @@ export default function PredictionRecommendation({
                                     <p className="text-[10px] font-bold text-slate-400 mt-0.5">{rec.description}</p>
                                   </div>
                                 </div>
-                                <button 
-                                  onClick={() => handleOrderNow(rec)}
-                                  className="flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-2 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-teal-600 active:scale-95"
-                                >
-                                  Commander
-                                  <ArrowRight size={14} />
-                                </button>
+                                {canOrder && (
+                                  <button 
+                                    onClick={() => handleOrderNow(rec)}
+                                    className="flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-2 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-teal-600 active:scale-95"
+                                  >
+                                    Commander
+                                    <ArrowRight size={14} />
+                                  </button>
+                                )}
                               </div>
                             ))}
                           </div>
